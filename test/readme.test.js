@@ -64,9 +64,9 @@ test('Japanese metadata supplies the complete hub entry', () => {
   assert.ok(Object.values(fields).every(Boolean));
 });
 
-test('Five captioned screenshots exist as 1280 by 800 PNGs under 300KB', () => {
+test('Eight captioned screenshots exist as 1280 by 800 PNGs under 300KB', () => {
   const images = docs.map(text => [...text.matchAll(/!\[([^\]]+)\]\((assets\/[^)]+)\)\n\n\*([^\n]+)\*/g)]);
-  assert.deepEqual(images.map(list => list.length), [3, 2]);
+  assert.deepEqual(images.map(list => list.length), [4, 4]);
   const names = new Set();
   for (const [, alt, file, caption] of images.flat()) {
     assert.ok(alt.length > 5 && caption.length > 20);
@@ -98,7 +98,8 @@ function treeFiles(text) {
     const branch = line.search(/[├└]/);
     assert.ok(branch >= 0);
     const depth = branch / 4;
-    const name = line.slice(branch + 4).trim();
+    assert.match(line, / # .+/);
+    const name = line.slice(branch + 4).split(' # ')[0].trim();
     parents.length = depth;
     if (name.endsWith('/')) parents.push(name.slice(0, -1));
     else files.push([...parents, name].join('/'));
@@ -133,6 +134,22 @@ test('Published numeric examples agree with core formulas and design limits', ()
     }
     assert.ok(text.includes('ultrasonic-reach-meter.lang') && text.includes('ultrasonic-reach-meter.theme'));
   }
+});
+
+test('F5: bilingual README trial examples reproduce classifications and timings', () => {
+  const labels = [{ weak: '弱い', reached: '届いた', absent: '届かない' },
+    { weak: 'Weak', reached: 'Reached', absent: 'Not reached' }];
+  docs.forEach((text, language) => {
+    const examples = [...text.matchAll(/^\| \+([\d.]+)dB \| \+([\d.]+)dB \| ([^|]+) \|$/gm)];
+    assert.equal(examples.length, 5);
+    for (const [, first, second, label] of examples) {
+      assert.equal(label, labels[language][core.classify([Number(first), Number(second)])]);
+    }
+    const timing = core.timing(48000, 0.02);
+    for (const value of [Math.ceil(timing.total), Math.ceil(timing.total / 2), timing.burst.toFixed(3)]) {
+      assert.ok(text.includes(String(value)));
+    }
+  });
 });
 
 test('Japanese spacing, limited emphasis and public-source boundaries are preserved', () => {

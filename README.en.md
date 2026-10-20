@@ -22,20 +22,28 @@ You can also open a downloaded `index.html` via file://. Microphone access depen
 
 ## 📸 Screenshots
 
-![Receive-only results in the upper bands](assets/en/reach.png)
+![Separate device and hearing measurement conditions](assets/en/environment.png)
 
-*Headless Chromium on Windows received a synthetic WAV. Tones at 18–20kHz were detected; absent tones at 20.5–21.5kHz were not. The differences are relative FFT power values, not measurements of a physical speaker and microphone. The Japanese screenshots also show a 48000Hz AudioContext, a 21.5kHz ceiling and all three processing settings off.*
+*A scripted UI example retains processing settings reported as off and the play-and-record session for device measurement, alongside playback for hearing measurement. These are supplied conditions, not physical speaker and microphone measurements.*
+
+![Both trial differences and the reason for a weak result](assets/en/reach.png)
+
+*A display example uses +12.0/+2.0dB. Only one trial reaches +10dB, so the result is weak. The bar shows the smaller difference. These are supplied values, not physical measurements.*
 
 ![Hearing responses beside device results](assets/en/hearing.png)
 
-*This scripted interaction answered “Heard” up to 14kHz, “Not heard” at 15 and 16kHz, and “Heard” again when confirming 14kHz. It is not a measurement of a person's hearing. Receive-only results and hearing responses are labeled as separate conditions.*
+*This scripted interaction answered “Heard” up to 13kHz, “Not heard” at 14 and 15kHz, then confirmed 13kHz. It is not a measurement of a person's hearing. Session differences and upper-band limits have separate reference reasons.*
+
+![Measurement stopped after input interruption](assets/en/interrupted.png)
+
+*This example simulates a microphone interruption. The run is marked as input interrupted, distinct from not reached. Restored input does not resume the run automatically; the user starts a new measurement.*
 
 ## ✨ Features
 
 | Section | Content |
 |---|---|
 | 1. Before starting | Volume and surroundings, default −30dBFS gain with a −12dBFS cap |
-| 2. This environment | Actual AudioContext sampleRate, frequency ceiling, echo cancellation, noise suppression and automatic gain settings |
+| 2. This environment | Separate device and hearing conditions: sampleRate, processing settings, session, starting level, output latency, microphone rate and channel count |
 | 3. Device reach | Both, send only and receive only; bars and status for each frequency |
 | 4. Hearing limit | Heard / Not heard responses and one replay per step |
 | 5. Results | Device results and hearing responses by frequency, with condition-dependent interpretation |
@@ -55,11 +63,15 @@ The easiest starting point is one device: finish “Emit and receive,” then co
 
 For two devices, select “Emit only” on the PC and “Receive only” on an iPhone or another receiver. Face the speaker and microphone toward each other at about 10cm. Start the receiver first, then the PC. Reception ends after 60 seconds. If the sending sequence exceeds 60 seconds in your environment, the measurement window may not cover every step. The result describes that particular sender-to-receiver path.
 
-“Emit and receive” uses two independent trials. In the 48kHz test environment it took about 79 seconds; “Emit only” took about 38 seconds. Duration varies with sampleRate, output latency and scheduling. The page shows an estimate.
+“Emit and receive” uses two independent trials. At 48kHz with 20ms output latency, the displayed estimate is 87 seconds; “Emit only” is 44 seconds. Actual duration varies with sampleRate, output latency and scheduling.
+
+The page displays when microphone permission is pending. Muted or disconnected input interrupts the run and is distinguished from “Not reached.” Restoring input does not resume with the previous background values. Check the microphone and start a new measurement. Opening help during measurement stops the run.
 
 ## 🔬 Test tones and classification
 
-An integer-Hz sine wave is calculated into a one-second AudioBuffer and looped for a short burst. Each end uses a 20ms linear ramp. Hearing bursts last 1.5 seconds. Device bursts allow for output latency followed by eight independent frames.
+An integer-Hz sine wave is calculated into a one-second AudioBuffer and looped for a short burst. Each end uses a 20ms linear ramp. Hearing bursts last 1.5 seconds. Device bursts allow for output latency plus 150ms, eight independent frames, a fixed allowance of two frame intervals, and a 20ms release ramp. At 48kHz with 20ms output latency, a burst lasts 1.900 seconds.
+
+Emission and FFT acquisition use the same AudioContext clock. Only eight independent, non-overlapping windows whose entire 8192 samples fall within the stable tone interval are accepted. If delays prevent this, the run stops with “Measurement conditions insufficient.” Playback duration is never extended to wait for late reads.
 
 | sampleRate | Output ceiling | Reference boundary |
 |---|---|---|
@@ -76,9 +88,21 @@ AnalyserNode uses fftSize 8192 and smoothingTimeConstant 0. Reads are separated 
 | Emit only | Display each frequency and emit a short burst. No microphone or reach classification. |
 | Receive only | Use the temporal median of each band over 60 seconds as background, compared with eight-frame moving averages. Two evaluations above +10dB separated by at least 0.5 seconds mean reached; both may occur within one burst. |
 
+“Emit and receive” displays both trial differences. The bar shows the smaller one. A single strong trial does not meet the requirement for both trials to reach at least +10dB.
+
+| Trial 1 | Trial 2 | Result |
+|---|---|---|
+| +12.0dB | +2.0dB | Weak |
+| +2.0dB | +12.0dB | Weak |
+| +6.0dB | +2.0dB | Weak |
+| +12.0dB | +12.0dB | Reached |
+| +2.0dB | +2.0dB | Not reached |
+
 In receive-only mode, signal and background powers are each floored at 10⁻¹² (−120dB in FFT values) before their ratio is calculated. This prevents tiny numerical components from being classified as received solely because of a large ratio. A synthetic input produced +15.1dB at the absent 21.5kHz tone against background near −173dB. This design floor is not a calibrated sound-pressure value and may miss faint signals. It does not apply to “Both.”
 
-The hearing result means “the highest frequency heard on this device at this volume.” A failed final confirmation leaves it unconfirmed. Changed gain, different sampleRate or gain between device and hearing measurements, and reference-band frequencies qualify the interpretation.
+The hearing result means “the highest frequency heard on this device at this volume.” A failed final confirmation leaves it unconfirmed. Reference reasons distinguish upper-band limits, level changes during a run, and differences in measured conditions. They appear with the current frequency, result rows and highest value. Hearing-only measurements also mark 18.5kHz and above at 44.1kHz, and 20.5kHz and above at 48kHz, as references.
+
+Device and hearing conditions are kept as separate in-memory records. Confirmed differences such as sampleRate, session and starting level qualify comparisons. Unreported processing is not treated as off. A microphone rate different from the AudioContext rate alone does not establish a fault or insufficient bandwidth. On narrow screens, scroll horizontally inside the result table.
 
 ## 🎯 Use cases
 
@@ -168,35 +192,38 @@ This does not identify the type or source of the sound.
 ## 📁 Directory structure
 
 ```text
-ultrasonic-reach-meter/
-├── .github/workflows/test.yml
-├── .gitignore
-├── LICENSE
-├── README.md
-├── README.en.md
-├── CLAUDE.md
-├── package.json
-├── index.html
-├── style.css
-├── tone-core.js
-├── audio-io.js
-├── messages.js
-├── app.js
-├── assets/
-│   ├── environment.png
-│   ├── reach.png
-│   ├── hearing.png
-│   └── en/
-│       ├── reach.png
-│       └── hearing.png
-└── test/
-    ├── audio.test.js
-    ├── claims.test.js
-    ├── contrast.test.js
-    ├── format.test.js
-    ├── html.test.js
-    ├── readme.test.js
-    └── tone-core.test.js
+ultrasonic-reach-meter/        # Application root
+├── .github/workflows/test.yml # Node 22 syntax checks and tests
+├── .gitignore                # Local file exclusions
+├── LICENSE                   # MIT license
+├── README.md                 # Japanese documentation
+├── README.en.md              # English documentation
+├── CLAUDE.md                 # Development rules
+├── package.json              # Test command
+├── index.html                # Interface and lessons
+├── style.css                 # Layout and colors
+├── tone-core.js              # Pure tone and classification functions
+├── audio-io.js               # Audio input, output and timing
+├── messages.js               # Bilingual copy
+├── app.js                    # Interaction and rendering
+├── assets/                   # Japanese screenshots
+│   ├── environment.png       # Separate measurement conditions
+│   ├── reach.png             # Both differences and explanation
+│   ├── hearing.png           # Hearing responses and results
+│   ├── interrupted.png       # Interrupted input
+│   └── en/                  # English screenshots
+│       ├── environment.png   # Separate measurement conditions
+│       ├── reach.png         # Both differences and explanation
+│       ├── hearing.png       # Hearing responses and results
+│       └── interrupted.png   # Interrupted input
+└── test/                     # node:test regression checks
+    ├── audio.test.js         # Adapter and virtual clock
+    ├── claims.test.js        # Claims and excluded wording
+    ├── contrast.test.js      # Text contrast
+    ├── format.test.js        # Source readability
+    ├── html.test.js          # HTML and CSP
+    ├── readme.test.js        # Documentation and screenshots
+    └── tone-core.test.js     # Synthetic spectra and pure functions
 ```
 
 tone-core.js contains DOM-independent calculations; audio-io.js manages audio and microphone access; app.js manages UI and interaction; messages.js contains Japanese and English copy.
@@ -211,6 +238,8 @@ find . -name '*.js' -not -path './.git/*' -print0 | xargs -0 -n1 node --check
 ```
 
 Run the syntax command in a shell such as Git Bash. CI performs these checks on push and pull_request.
+
+Tests cover a virtual clock with 0/20/80/200ms delays at 44.1/48kHz, stops, muted input, two-trial synthetic spectra, retained conditions, upper-band reasons and README values. Layout was checked in Chromium, Firefox and Windows WebKit at 320/390/1280px in both languages. Windows WebKit layout checks do not establish audio behavior on physical Safari devices.
 
 ## 📄 License
 

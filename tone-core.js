@@ -67,10 +67,17 @@
     const latency = Number.isFinite(outputLatency) ? Math.max(0, outputLatency) : 0;
     const settle = latency + 0.15;
     const window = FRAME_COUNT * interval;
-    // Two separate quiet/tone pairs; the final FFT window finishes before release.
-    const burst = settle + window + 0.02;
-    const trial = window + burst + 0.02;
-    return { interval, window, settle, burst, trial, total: 2 * trial * ladder(rate).length };
+    // Fixed scheduling allowance; never extend a playing source to collect late frames.
+    const allowance = 2 * interval;
+    const burst = settle + window + allowance + 0.02;
+    const trial = window + burst + 0.04;
+    return { interval, window, settle, allowance, burst, trial, total: 2 * trial * ladder(rate).length };
+  }
+
+  function validFrame(time, previous, start, end, rate) {
+    const epsilon = 1e-9;
+    return Number.isFinite(time) && time - FFT_SIZE / validRate(rate) >= start - epsilon &&
+      time <= end + epsilon && (previous === null || time - previous >= frameInterval(rate) - epsilon);
   }
 
   function frequencyBin(frequency, rate, size = FFT_SIZE) {
@@ -103,6 +110,13 @@
     if (!deltas.length) return 'unmeasured';
     if (deltas.length >= 2 && deltas.slice(-2).every(value => value >= 10)) return 'reached';
     return Math.max(...deltas) >= 4 ? 'weak' : 'absent';
+  }
+
+  function trialExplanation(deltas) {
+    if (deltas.length !== 2) return null;
+    if (deltas.every(value => value >= 10)) return 'bothTrialsReached';
+    if (deltas.some(value => value >= 10)) return 'oneTrialReached';
+    return deltas.some(value => value >= 4) ? 'weakTrials' : 'absentTrials';
   }
 
   function receive(powers, times, eligible = true) {
@@ -139,6 +153,29 @@
       values[key] = settings[key] === true ? 'on' : settings[key] === false ? 'off' : 'unreported';
     }
     return { values, warn: values.echoCancellation === 'on' || values.noiseSuppression === 'on' };
+  }
+
+  function environmentSnapshot(info, startGain) {
+    return Object.freeze({ ...info, startGain,
+      processing: Object.freeze({ ...info.processing, values: Object.freeze({ ...info.processing.values }) }),
+      timing: Object.freeze({ ...info.timing }) });
+  }
+
+  function referenceReasons(frequency, device, hearing, volumeChanged = false) {
+    const reasons = [];
+    if ([device, hearing].some(record => record && isReference(frequency, record.sampleRate))) reasons.push('referenceBand');
+    if (volumeChanged) reasons.push('referenceVolume');
+    if (device && hearing) {
+      const known = value => value !== null && value !== undefined && value !== 'unreported';
+      const fields = ['sampleRate', 'session', 'startGain', 'outputLatency', 'channelCount', 'inputSampleRate'];
+      const different = fields.some(key => known(device[key]) && known(hearing[key]) && device[key] !== hearing[key]);
+      const processingDifferent = Object.keys(device.processing.values).some(key => {
+        const a = device.processing.values[key], b = hearing.processing.values[key];
+        return known(a) && known(b) && a !== b;
+      });
+      if (different || processingDifferent) reasons.push('referenceConditions');
+    }
+    return reasons;
   }
 
   function hearingStart(rate) {
@@ -182,6 +219,7 @@
 
   return Object.freeze({ FFT_SIZE, FRAME_COUNT, DEFAULT_DB, MAX_DB, RECEIVE_POWER_FLOOR, DEVICE_FREQUENCIES, HEARING_FREQUENCIES,
     upperFrequency, isReference, ladder, gain, toneSamples, rampPoints, frameInterval, timing,
-    frequencyBin, bandPower, meanPower, deltaDb, classify, receive, processing,
+    validFrame, frequencyBin, bandPower, meanPower, deltaDb, classify, trialExplanation, receive, processing,
+    environmentSnapshot, referenceReasons,
     hearingStart, hearingAnswer, hearingReplay, hearingVolumeChanged, interpretation });
 }));
