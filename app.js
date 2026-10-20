@@ -71,7 +71,7 @@
       const label = element('div', undefined, 'reach-label');
       label.append(element('span', hz(row.frequency) + (row.reference ? ` · ${t('reference')}` : '')));
       const key = row.status === 'unavailable' && measuredRole === 'receive' ? 'receiveUnavailable' : row.status;
-      label.append(element('span', t(key), 'status-' + row.status));
+      label.append(element('span', t(row.reason || key), 'status-' + row.status));
       box.append(label);
       if (row.delta !== null && row.delta !== undefined) {
         const meter = element('progress');
@@ -103,7 +103,7 @@
       const tr = element('tr');
       tr.dataset.frequency = frequency;
       const deviceKey = status === 'unavailable' && measuredRole === 'receive' ? 'receiveUnavailable' : status;
-      tr.append(element('th', hz(frequency)), element('td', t(deviceKey)),
+      tr.append(element('th', hz(frequency)), element('td', t(row && row.reason || deviceKey)),
         element('td', answer ? t(answer.heard ? 'heard' : 'notHeard') : t('unmeasured')),
         element('td', reading ? t(reading === 'reference' ? 'comparisonReference' : reading) : '—'));
       $('results-body').append(tr);
@@ -166,6 +166,14 @@
     });
   }
 
+  function markInterrupted(reason) {
+    errorKey = reason;
+    if (!hearingActive) {
+      if (!rows.length) rows = core.DEVICE_FREQUENCIES.map(frequency => ({ frequency }));
+      rows = rows.map(row => ({ ...row, status: 'unavailable', delta: null, deltas: [], reason }));
+    }
+  }
+
   async function measure() {
     const token = ++operation;
     busy = true;
@@ -206,6 +214,7 @@
     } catch (error) {
       if (token === operation && error.message !== 'cancelled') {
         errorKey = messages[language][error.message] ? error.message : 'microphoneError';
+        if (error.message === 'inputInterrupted' || error.message === 'conditionsInsufficient') markInterrupted(error.message);
         statusKey = 'stopped';
       }
     } finally {
@@ -309,7 +318,11 @@
     else if (busy) changedLevel = true;
     render();
   });
-  audio.onInterrupted(() => { if (busy) stop(); });
+  audio.onInterrupted(reason => {
+    if (!busy) return;
+    if (reason === 'inputInterrupted') markInterrupted(reason);
+    stop();
+  });
   document.addEventListener('visibilitychange', () => { if (document.hidden && busy) stop(); });
   window.addEventListener('pagehide', () => { stop(); void audio.close(); });
   if (!audio.available(false)) errorKey = 'notSupported';

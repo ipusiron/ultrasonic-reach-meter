@@ -16,6 +16,8 @@
     let session = 'unreported';
     let generation = 0;
     let stateHandler = null;
+    let inputTrack = null;
+    let trackHandler = null;
     const pending = new Set();
     const nav = host.navigator || {};
 
@@ -40,11 +42,16 @@
       }
     }
 
-    function stop() {
+    function stop(reason = 'cancelled') {
       generation++;
-      for (const cancel of [...pending]) cancel();
+      for (const cancel of [...pending]) cancel(reason);
       pending.clear();
       stopTone();
+      if (inputTrack && typeof inputTrack.removeEventListener === 'function') {
+        inputTrack.removeEventListener('mute', trackHandler);
+        inputTrack.removeEventListener('ended', trackHandler);
+      }
+      inputTrack = trackHandler = null;
       if (stream) stream.getTracks().forEach(track => track.stop());
       if (input) input.disconnect();
       if (analyser) analyser.disconnect();
@@ -63,10 +70,10 @@
     function wait(seconds, token = generation) {
       return new Promise((resolve, reject) => {
         if (token !== generation) { reject(new Error('cancelled')); return; }
-        const cancel = () => {
+        const cancel = (reason = 'cancelled') => {
           host.clearTimeout(timer);
           pending.delete(cancel);
-          reject(new Error('cancelled'));
+          reject(new Error(reason));
         };
         const timer = host.setTimeout(() => {
           pending.delete(cancel);
@@ -75,6 +82,23 @@
         }, seconds * 1000);
         pending.add(cancel);
       });
+    }
+
+    function checkInput() {
+      if (inputTrack && (inputTrack.muted || inputTrack.readyState === 'ended' || inputTrack.enabled === false)) {
+        throw new Error('inputInterrupted');
+      }
+    }
+
+    async function until(time, token) {
+      for (let attempt = 0; context && context.currentTime < time - 1e-9; attempt++) {
+        if (token !== generation) throw new Error('cancelled');
+        checkInput();
+        if (attempt >= 10 || context.state !== 'running') throw new Error('conditionsInsufficient');
+        await wait(Math.max(0.001, time - context.currentTime), token);
+      }
+      if (token !== generation || !context) throw new Error('cancelled');
+      checkInput();
     }
 
     async function open(role) {
@@ -124,7 +148,15 @@
         if (typeof track.getCapabilities === 'function') {
           try { track.getCapabilities(); } catch (_) { /* Optional introspection. */ }
         }
-        track.addEventListener('ended', () => { if (stateHandler) stateHandler(); });
+        inputTrack = track;
+        trackHandler = () => {
+          if (token !== generation) return;
+          stop('inputInterrupted');
+          if (stateHandler) stateHandler('inputInterrupted');
+        };
+        track.addEventListener('ended', trackHandler);
+        track.addEventListener('mute', trackHandler);
+        try { checkInput(); } catch (error) { stop(); throw error; }
         try {
           input = context.createMediaStreamSource(stream);
           analyser = context.createAnalyser();
@@ -172,21 +204,30 @@
         envelope.disconnect();
         if (source === node) { source = null; outputGain = null; }
       });
+      return { start, end: start + duration, stableEnd: start + duration - 0.02 };
     }
 
     function readPowers(frequencies) {
+      checkInput();
       if (!analyser || !context) throw new Error('cancelled');
       const spectrum = new Float32Array(analyser.frequencyBinCount);
       analyser.getFloatFrequencyData(spectrum);
       return frequencies.map(frequency => core.bandPower(spectrum, frequency, context.sampleRate));
     }
 
-    async function eight(frequency, token) {
+    async function eight(frequency, token, start, end) {
       const powers = [];
       const interval = core.frameInterval(context.sampleRate);
+      let previous = null;
       for (let i = 0; i < core.FRAME_COUNT; i++) {
-        await wait(interval, token);
-        powers.push(readPowers([frequency])[0]);
+        await until(previous === null ? start + interval : previous + interval, token);
+        const before = context.currentTime;
+        if (!core.validFrame(before, previous, start, end, context.sampleRate)) throw new Error('conditionsInsufficient');
+        const power = readPowers([frequency])[0];
+        const after = context.currentTime;
+        if (after > end + 1e-9) throw new Error('conditionsInsufficient');
+        powers.push(power);
+        previous = after;
       }
       return core.meanPower(powers);
     }
@@ -203,15 +244,18 @@
         for (let trial = 0; trial < repeats; trial++) {
           onStep({ phase: 'quiet', frequency, trial: trial + 1, repeats });
           let background = null;
-          if (role === 'both') background = await eight(frequency, token);
+          if (role === 'both') {
+            const quietStart = context.currentTime;
+            background = await eight(frequency, token, quietStart, quietStart + schedule.window + schedule.allowance);
+          }
           else await wait(schedule.window, token);
           onStep({ phase: 'tone', frequency, trial: trial + 1, repeats });
-          emit(frequency, level(), schedule.burst);
-          await wait(schedule.settle, token);
+          const tone = emit(frequency, level(), schedule.burst);
           if (role === 'both') {
-            const signal = await eight(frequency, token);
+            const signal = await eight(frequency, token, tone.start + schedule.settle, tone.stableEnd);
             deltas.push(core.deltaDb(signal, background));
-          } else await wait(schedule.window, token);
+          }
+          await until(tone.end, token);
           await wait(0.04, token);
           stopTone();
         }
@@ -233,10 +277,13 @@
       const times = [];
       const started = host.performance.now();
       const deadline = started + 60000;
+      let previous = context.currentTime;
       while (host.performance.now() + details.timing.interval * 1000 <= deadline) {
-        await wait(details.timing.interval, token);
+        await until(previous + details.timing.interval, token);
+        if (host.performance.now() > deadline) break;
         const powers = readPowers(frequencies);
-        times.push((host.performance.now() - started) / 1000);
+        previous = context.currentTime;
+        times.push(previous);
         powers.forEach((power, index) => values[index].push(power));
         const rows = frequencies.map((frequency, index) => ({ frequency,
           ...core.receive(values[index], times), reference: core.isReference(frequency, details.sampleRate) }));

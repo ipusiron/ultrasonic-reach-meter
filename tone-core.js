@@ -67,10 +67,17 @@
     const latency = Number.isFinite(outputLatency) ? Math.max(0, outputLatency) : 0;
     const settle = latency + 0.15;
     const window = FRAME_COUNT * interval;
-    // Two separate quiet/tone pairs; the final FFT window finishes before release.
-    const burst = settle + window + 0.02;
-    const trial = window + burst + 0.02;
-    return { interval, window, settle, burst, trial, total: 2 * trial * ladder(rate).length };
+    // Fixed scheduling allowance; never extend a playing source to collect late frames.
+    const allowance = 2 * interval;
+    const burst = settle + window + allowance + 0.02;
+    const trial = window + burst + 0.04;
+    return { interval, window, settle, allowance, burst, trial, total: 2 * trial * ladder(rate).length };
+  }
+
+  function validFrame(time, previous, start, end, rate) {
+    const epsilon = 1e-9;
+    return Number.isFinite(time) && time - FFT_SIZE / validRate(rate) >= start - epsilon &&
+      time <= end + epsilon && (previous === null || time - previous >= frameInterval(rate) - epsilon);
   }
 
   function frequencyBin(frequency, rate, size = FFT_SIZE) {
@@ -182,6 +189,6 @@
 
   return Object.freeze({ FFT_SIZE, FRAME_COUNT, DEFAULT_DB, MAX_DB, RECEIVE_POWER_FLOOR, DEVICE_FREQUENCIES, HEARING_FREQUENCIES,
     upperFrequency, isReference, ladder, gain, toneSamples, rampPoints, frameInterval, timing,
-    frequencyBin, bandPower, meanPower, deltaDb, classify, receive, processing,
+    validFrame, frequencyBin, bandPower, meanPower, deltaDb, classify, receive, processing,
     hearingStart, hearingAnswer, hearingReplay, hearingVolumeChanged, interpretation });
 }));

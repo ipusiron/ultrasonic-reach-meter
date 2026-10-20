@@ -87,6 +87,8 @@
       "emitted": "発音済み（判定なし）",
       "reference": "参考値",
       "idle": "待機中",
+      "inputInterrupted": "入力中断。マイクを確認して、もう一度測定してください。",
+      "conditionsInsufficient": "測定条件不足。有効な8フレームがそろいませんでした。もう一度測定してください。",
       "processingWarning": "エコーキャンセルかノイズ抑制がオンです。16kHz以上は測れない可能性が高いため、設定と結果に注意してください。",
       "continue": "この設定で続ける",
       "cancel": "中止する",
@@ -369,6 +371,8 @@
       "emitted": "Emitted (no measurement)",
       "reference": "Reference",
       "idle": "Ready",
+      "inputInterrupted": "Input interrupted. Check the microphone and start a new measurement.",
+      "conditionsInsufficient": "Measurement conditions insufficient. Eight valid frames were not obtained. Start a new measurement.",
       "processingWarning": "Echo cancellation or noise suppression is on. Frequencies above 16 kHz may be removed." +
         " Treat the settings and results with care.",
       "continue": "Continue with these settings",
