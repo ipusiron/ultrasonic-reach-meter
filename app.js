@@ -89,11 +89,18 @@
       label.append(element('span', t(row.reason || key), 'status-' + row.status));
       box.append(label);
       if (row.delta !== null && row.delta !== undefined) {
+        const paired = row.deltas && row.deltas.length === 2;
+        const formatDelta = value => `${value >= 0 ? '+' : ''}${value.toFixed(1)}`;
         const meter = element('progress');
         meter.max = 60;
         meter.value = Math.max(0, Math.min(60, row.delta));
-        meter.setAttribute('aria-label', `${hz(row.frequency)} ${t('difference')}`);
-        box.append(meter, element('span', `${t('difference')} ${row.delta >= 0 ? '+' : ''}${row.delta.toFixed(1)}dB`));
+        const label = t(paired ? 'smallerDifference' : 'difference');
+        meter.setAttribute('aria-label', `${hz(row.frequency)} ${label}`);
+        if (paired) {
+          box.append(element('div', `${t('trialDifferences')}: ${row.deltas.map(formatDelta).join(' / ')}dB`, 'trial-values'));
+          box.append(element('div', t(core.trialExplanation(row.deltas)), 'trial-explanation'));
+        }
+        box.append(meter, element('span', `${label} ${formatDelta(row.delta)}dB`));
       }
       $('reach-bars').append(box);
     }
@@ -202,7 +209,7 @@
     const startGain = level();
     changedLevel = false;
     hearingLevelChanged = false;
-    statusKey = role === 'receive' ? 'listening' : 'selfCheck';
+    statusKey = role === 'send' ? 'selfCheck' : 'permissionPending';
     errorKey = '';
     try {
       const opened = audio.open(role);
@@ -210,6 +217,7 @@
       const details = await opened;
       if (token !== operation) return;
       deviceEnvironment = core.environmentSnapshot(details, startGain);
+      statusKey = role === 'receive' ? 'listening' : 'selfCheck';
       rows = core.DEVICE_FREQUENCIES.map(frequency => ({ frequency,
         status: frequency > details.upper ? 'unavailable' : 'unmeasured', delta: null,
         reference: core.isReference(frequency, details.sampleRate) }));
@@ -317,6 +325,7 @@
     language = language === 'ja' ? 'en' : 'ja'; save('lang', language); render();
   });
   $('help-toggle').addEventListener('click', () => {
+    if (busy) stop();
     $('help-dialog').showModal();
     $('help-dialog').scrollTop = 0;
   });

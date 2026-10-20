@@ -274,3 +274,13 @@ test('F4: band, level changes and measured condition changes have separate reaso
   assert.deepEqual(core.referenceReasons(20500, device, hearing, true),
     ['referenceBand', 'referenceVolume', 'referenceConditions']);
 });
+
+for (const [deltas, status, explanation] of [
+  [[12, 2], 'weak', 'oneTrialReached'], [[2, 12], 'weak', 'oneTrialReached'],
+  [[6, 2], 'weak', 'weakTrials'], [[12, 12], 'reached', 'bothTrialsReached'], [[2, 2], 'absent', 'absentTrials']
+]) {
+  test(`F5: ${deltas.join('/')} dB classification matches its two-trial explanation`, () => {
+    assert.equal(core.classify(deltas), status);
+    assert.equal(core.trialExplanation(deltas), explanation);
+  });
+}

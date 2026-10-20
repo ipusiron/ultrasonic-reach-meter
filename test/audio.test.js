@@ -311,3 +311,16 @@ test('F3: audio info reports adopted latency and microphone settings independent
   assert.equal(device.channelCount, 1);
   f.io.stop();
 });
+
+for (const deltas of [[12, 2], [2, 12], [6, 2], [12, 12], [2, 2]]) {
+  test(`F5: synthetic spectra retain both trial differences ${deltas.join('/')}`, async () => {
+    const f = clockFixture({ deltas });
+    await f.io.open('both');
+    await assert.rejects(f.io.staircase('both', () => -30, f.step), /firstRowComplete/);
+    const row = f.state.rows[0];
+    row.deltas.forEach((value, index) => assert.ok(Math.abs(value - deltas[index]) < 1e-6));
+    assert.ok(Math.abs(row.delta - Math.min(...deltas)) < 1e-6);
+    assert.equal(row.status, core.classify(deltas));
+    f.io.stop();
+  });
+}

@@ -119,7 +119,9 @@
     <section class="card" aria-labelledby="results-title">
       <h2 id="results-title" data-i18n="results"></h2>
       <p id="result-summary" data-i18n="empty"></p>
-      <div class="table-wrap"><table id="results-table" hidden>
+      <p class="muted" data-i18n="tableScroll"></p>
+      <div class="table-wrap" tabindex="0" role="region" data-label="results">
+        <table id="results-table" class="results-table" hidden>
         <thead><tr><th data-i18n="frequency"></th><th id="device-column" data-i18n="deviceColumn"></th>
           <th data-i18n="hearingColumn"></th><th data-i18n="reading"></th></tr></thead>
         <tbody id="results-body"></tbody>

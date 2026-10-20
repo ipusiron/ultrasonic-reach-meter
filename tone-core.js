@@ -112,6 +112,13 @@
     return Math.max(...deltas) >= 4 ? 'weak' : 'absent';
   }
 
+  function trialExplanation(deltas) {
+    if (deltas.length !== 2) return null;
+    if (deltas.every(value => value >= 10)) return 'bothTrialsReached';
+    if (deltas.some(value => value >= 10)) return 'oneTrialReached';
+    return deltas.some(value => value >= 4) ? 'weakTrials' : 'absentTrials';
+  }
+
   function receive(powers, times, eligible = true) {
     if (!eligible) return { status: 'unavailable', delta: null, background: null };
     if (powers.length < FRAME_COUNT) return { status: 'unmeasured', delta: null, background: null };
@@ -212,6 +219,7 @@
 
   return Object.freeze({ FFT_SIZE, FRAME_COUNT, DEFAULT_DB, MAX_DB, RECEIVE_POWER_FLOOR, DEVICE_FREQUENCIES, HEARING_FREQUENCIES,
     upperFrequency, isReference, ladder, gain, toneSamples, rampPoints, frameInterval, timing,
-    validFrame, frequencyBin, bandPower, meanPower, deltaDb, classify, receive, processing, environmentSnapshot, referenceReasons,
+    validFrame, frequencyBin, bandPower, meanPower, deltaDb, classify, trialExplanation, receive, processing,
+    environmentSnapshot, referenceReasons,
     hearingStart, hearingAnswer, hearingReplay, hearingVolumeChanged, interpretation });
 }));
