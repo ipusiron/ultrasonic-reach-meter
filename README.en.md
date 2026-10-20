@@ -138,7 +138,7 @@ There is no continuous-play button, and sequences end automatically. The stop bu
 
 ### Day041 Mic Gain Logger
 
-This tool grew out of the tone-source page used for physical-device testing of [Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger), rebuilt as a standalone learning tool.
+This tool grew out of the [tone-source page (Tone Sweep)](https://ipusiron.github.io/mic-gain-logger/tone_sweep.html) used for physical-device testing of [Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger), rebuilt as a standalone learning tool.
 The original page raised the test-tone frequency in steps to check how high a smartphone microphone could pick it up.
 Mic Gain Logger is available on its [demo page](https://ipusiron.github.io/mic-gain-logger/).
 

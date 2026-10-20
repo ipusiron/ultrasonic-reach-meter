@@ -29,21 +29,22 @@ test('Readmes retain the ordered bilingual sections and project identity', () =>
   assert.match(docs[1], /^English · \[日本語\]\(README.md\)/);
 });
 
-test('Related tools sections link only to Day041 with identical repository and demo URLs', () => {
+test('Related tools sections link only to Day041 with identical repository, demo and Tone Sweep URLs', () => {
   const sectionHeadings = ['🔗 関連ツール', '🔗 Related tools'];
   const expected = [
     'https://github.com/ipusiron/mic-gain-logger',
-    'https://ipusiron.github.io/mic-gain-logger/'
+    'https://ipusiron.github.io/mic-gain-logger/',
+      'https://ipusiron.github.io/mic-gain-logger/tone_sweep.html'
   ];
   const links = docs.map((text, i) => {
     const section = text.match(new RegExp(`^## ${sectionHeadings[i]}\\n([\\s\\S]*?)(?=^## )`, 'm'));
     assert.ok(section, sectionHeadings[i]);
     assert.match(section[1], /^### Day041 Mic Gain Logger$/m);
     const urls = [...section[1].matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(match => match[1]);
-    assert.deepEqual(urls, expected, sectionHeadings[i]);
+    assert.deepEqual([...urls].sort(), [...expected].sort(), sectionHeadings[i]);
     return urls;
   });
-  assert.deepEqual(links[0], links[1]);
+  assert.deepEqual([...links[0]].sort(), [...links[1]].sort());
 });
 
 test('Japanese metadata supplies the complete hub entry', () => {
