@@ -148,6 +148,29 @@
     return { values, warn: values.echoCancellation === 'on' || values.noiseSuppression === 'on' };
   }
 
+  function environmentSnapshot(info, startGain) {
+    return Object.freeze({ ...info, startGain,
+      processing: Object.freeze({ ...info.processing, values: Object.freeze({ ...info.processing.values }) }),
+      timing: Object.freeze({ ...info.timing }) });
+  }
+
+  function referenceReasons(frequency, device, hearing, volumeChanged = false) {
+    const reasons = [];
+    if ([device, hearing].some(record => record && isReference(frequency, record.sampleRate))) reasons.push('referenceBand');
+    if (volumeChanged) reasons.push('referenceVolume');
+    if (device && hearing) {
+      const known = value => value !== null && value !== undefined && value !== 'unreported';
+      const fields = ['sampleRate', 'session', 'startGain', 'outputLatency', 'channelCount', 'inputSampleRate'];
+      const different = fields.some(key => known(device[key]) && known(hearing[key]) && device[key] !== hearing[key]);
+      const processingDifferent = Object.keys(device.processing.values).some(key => {
+        const a = device.processing.values[key], b = hearing.processing.values[key];
+        return known(a) && known(b) && a !== b;
+      });
+      if (different || processingDifferent) reasons.push('referenceConditions');
+    }
+    return reasons;
+  }
+
   function hearingStart(rate) {
     const frequencies = ladder(rate, true);
     return { frequencies, index: 0, answers: [], misses: 0, highest: null, candidate: null,
@@ -189,6 +212,6 @@
 
   return Object.freeze({ FFT_SIZE, FRAME_COUNT, DEFAULT_DB, MAX_DB, RECEIVE_POWER_FLOOR, DEVICE_FREQUENCIES, HEARING_FREQUENCIES,
     upperFrequency, isReference, ladder, gain, toneSamples, rampPoints, frameInterval, timing,
-    validFrame, frequencyBin, bandPower, meanPower, deltaDb, classify, receive, processing,
+    validFrame, frequencyBin, bandPower, meanPower, deltaDb, classify, receive, processing, environmentSnapshot, referenceReasons,
     hearingStart, hearingAnswer, hearingReplay, hearingVolumeChanged, interpretation });
 }));

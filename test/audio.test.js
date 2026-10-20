@@ -297,3 +297,17 @@ test('F1: receive rejects overdue frames at the 60 second deadline', async () =>
   }
   f.io.stop();
 });
+
+test('F3: audio info reports adopted latency and microphone settings independently of context rate', async () => {
+  const f = fixture({ settings: { sampleRate: 44100, channelCount: 1 } });
+  const device = await f.io.open('both');
+  assert.equal(device.sampleRate, 48000);
+  assert.equal(device.inputSampleRate, 44100);
+  assert.equal(device.channelCount, 1);
+  assert.equal(device.outputLatency, 0);
+  const hearing = await f.io.open('hearing');
+  assert.equal(hearing.channelCount, null);
+  assert.equal(hearing.inputSampleRate, null);
+  assert.equal(device.channelCount, 1);
+  f.io.stop();
+});

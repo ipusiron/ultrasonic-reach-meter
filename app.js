@@ -14,16 +14,14 @@
   let busy = false;
   let role = 'both';
   let measuredRole = 'both';
-  let environment = null;
+  let deviceEnvironment = null;
+  let hearingEnvironment = null;
   let rows = [];
   let hearing = null;
   let hearingActive = false;
   let hearingPlaying = false;
-  let measuredRate = null;
-  let hearingRate = null;
-  let measuredGain = null;
-  let hearingGain = null;
   let changedLevel = false;
+  let hearingLevelChanged = false;
   let current = null;
   let statusKey = 'idle';
   let errorKey = '';
@@ -51,14 +49,31 @@
   }
 
   function renderEnvironment() {
-    if (!environment) return;
-    $('env-sampleRate').textContent = `${environment.sampleRate}Hz`;
-    $('env-upper').textContent = hz(environment.upper);
-    for (const [key, value] of Object.entries(environment.processing.values)) $('env-' + key).textContent = t(value);
-    $('env-session').textContent = environment.session === 'unreported' ? t('unreported') : environment.session;
-    $('processing-note').textContent = environment.processing.warn ? t('processingWarning') : '';
-    const seconds = role === 'receive' ? 60 : environment.timing.total / (role === 'send' ? 2 : 1);
-    $('duration').textContent = `${t('duration')}：${Math.ceil(seconds)}${t('seconds')}`;
+    for (const [prefix, record] of [['env-', deviceEnvironment], ['hearing-env-', hearingEnvironment]]) {
+      if (!record) continue;
+      $(prefix + 'sampleRate').textContent = `${record.sampleRate}Hz`;
+      $(prefix + 'upper').textContent = hz(record.upper);
+      for (const [key, value] of Object.entries(record.processing.values)) $(prefix + key).textContent = t(value);
+      $(prefix + 'session').textContent = record.session === 'unreported' ? t('unreported') : record.session;
+      $(prefix + 'startGain').textContent = `${record.startGain}dBFS`;
+      $(prefix + 'outputLatency').textContent = `${Math.round(record.outputLatency * 1000)}ms`;
+      $(prefix + 'channelCount').textContent = record.channelCount === null ? t('unreported') : record.channelCount;
+      $(prefix + 'inputSampleRate').textContent = record.inputSampleRate === null ? t('unreported') : `${record.inputSampleRate}Hz`;
+    }
+    $('hearing-environment').hidden = !hearingEnvironment;
+    $('processing-note').textContent = deviceEnvironment && deviceEnvironment.processing.warn ? t('processingWarning') : '';
+    if (deviceEnvironment) {
+      const seconds = role === 'receive' ? 60 : deviceEnvironment.timing.total / (role === 'send' ? 2 : 1);
+      $('duration').textContent = `${t('duration')}：${Math.ceil(seconds)}${t('seconds')}`;
+    }
+  }
+
+  function reasons(frequency) {
+    return core.referenceReasons(frequency, deviceEnvironment, hearingEnvironment, changedLevel || hearingLevelChanged);
+  }
+
+  function referenceText(keys) {
+    return keys.length ? `${t('reference')}: ${keys.map(t).join(' / ')}` : '';
   }
 
   function renderBars() {
@@ -95,17 +110,17 @@
       let answer = answers.find(item => item.frequency === frequency);
       if (answer && hearing.confirmed === false && frequency === hearing.candidate) answer = { ...answer, heard: false };
       const status = row ? row.status : 'unmeasured';
-      const reference = changedLevel || Boolean(hearing && hearing.reference) ||
-        Boolean(row && row.reference) ||
-        (measuredRate !== null && hearingRate !== null && measuredRate !== hearingRate) ||
-        (measuredGain !== null && hearingGain !== null && measuredGain !== hearingGain);
-      const reading = answer ? core.interpretation(status, answer.heard, measuredRole, reference) : null;
+      const reference = reasons(frequency);
+      const reading = answer ? core.interpretation(status, answer.heard, measuredRole, reference.length > 0) : null;
       const tr = element('tr');
       tr.dataset.frequency = frequency;
       const deviceKey = status === 'unavailable' && measuredRole === 'receive' ? 'receiveUnavailable' : status;
-      tr.append(element('th', hz(frequency)), element('td', t(row && row.reason || deviceKey)),
+      const frequencyCell = element('th', hz(frequency) + (reference.length ? ` · ${t('reference')}` : ''));
+      frequencyCell.scope = 'row';
+      frequencyCell.title = referenceText(reference);
+      tr.append(frequencyCell, element('td', t(row && row.reason || deviceKey)),
         element('td', answer ? t(answer.heard ? 'heard' : 'notHeard') : t('unmeasured')),
-        element('td', reading ? t(reading === 'reference' ? 'comparisonReference' : reading) : '—'));
+        element('td', reference.length ? referenceText(reference) : reading ? t(reading) : '—'));
       $('results-body').append(tr);
     }
     $('result-summary').textContent = hearing && hearing.phase === 'done' ? hearingSummary() :
@@ -116,12 +131,15 @@
     if (!hearing) return '';
     const summary = hearing.confirmed === false ? t('confirmationFailed') :
       hearing.highest ? `${t('highest')}: ${hz(hearing.highest)}` : t('noneHeard');
-    return summary + (hearing.reference ? ` ${t('comparisonReference')}` : '');
+    const reference = hearing.highest ? reasons(hearing.highest) :
+      hearingLevelChanged ? ['referenceVolume'] : [];
+    return summary + (reference.length ? ` ${referenceText(reference)}` : '');
   }
 
   function renderHearing() {
-    $('hearing-frequency').textContent = hearingActive ?
-      hz(hearing.phase === 'confirm' ? hearing.candidate : hearing.frequencies[hearing.index]) : '—';
+    const frequency = hearingActive ? hearing.phase === 'confirm' ? hearing.candidate : hearing.frequencies[hearing.index] : null;
+    $('hearing-frequency').textContent = frequency ? hz(frequency) : '—';
+    $('hearing-reference').textContent = frequency ? referenceText(reasons(frequency)) : '';
     $('hearing-status').textContent = !hearing ? '' : hearing.phase === 'done' ? hearingSummary() :
       !hearingActive ? t('stopped') : hearing.phase === 'confirm' ? t('confirm') : t('answerPrompt');
   }
@@ -179,23 +197,24 @@
     busy = true;
     measuredRole = role;
     hearing = null;
-    hearingRate = hearingGain = null;
+    deviceEnvironment = hearingEnvironment = null;
     rows = [];
-    measuredGain = level();
+    const startGain = level();
     changedLevel = false;
+    hearingLevelChanged = false;
     statusKey = role === 'receive' ? 'listening' : 'selfCheck';
     errorKey = '';
     try {
       const opened = audio.open(role);
       render();
-      environment = await opened;
+      const details = await opened;
       if (token !== operation) return;
-      measuredRate = environment.sampleRate;
+      deviceEnvironment = core.environmentSnapshot(details, startGain);
       rows = core.DEVICE_FREQUENCIES.map(frequency => ({ frequency,
-        status: frequency > environment.upper ? 'unavailable' : 'unmeasured', delta: null,
-        reference: core.isReference(frequency, environment.sampleRate) }));
+        status: frequency > details.upper ? 'unavailable' : 'unmeasured', delta: null,
+        reference: core.isReference(frequency, details.sampleRate) }));
       render();
-      if (environment.processing.warn && !(await confirmProcessing())) { stop(); return; }
+      if (details.processing.warn && !(await confirmProcessing())) { stop(); return; }
       if (token !== operation) return;
       if (role === 'receive') {
         await audio.receive(updated => {
@@ -253,15 +272,17 @@
     const token = ++operation;
     busy = true;
     hearingPlaying = true;
-    hearingGain = level();
+    const startGain = level();
+    hearingLevelChanged = false;
+    hearingEnvironment = null;
     errorKey = '';
     try {
       const opened = audio.open('hearing');
       render();
-      environment = await opened;
+      const details = await opened;
       if (token !== operation) return;
-      hearingRate = environment.sampleRate;
-      hearing = core.hearingStart(hearingRate);
+      hearingEnvironment = core.environmentSnapshot(details, startGain);
+      hearing = core.hearingStart(details.sampleRate);
       hearingActive = true;
       await playHearingStep(token);
     } catch (error) {
@@ -314,7 +335,10 @@
     render();
   }));
   $('gain').addEventListener('input', () => {
-    if (hearingActive) hearing = core.hearingVolumeChanged(hearing);
+    if (hearingActive) {
+      hearing = core.hearingVolumeChanged(hearing);
+      hearingLevelChanged = true;
+    }
     else if (busy) changedLevel = true;
     render();
   });

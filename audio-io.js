@@ -172,6 +172,9 @@
       const rate = context ? context.sampleRate : null;
       return { sampleRate: rate, upper: rate ? core.upperFrequency(rate) : null,
         processing: core.processing(settings), session,
+        outputLatency: context && Number.isFinite(context.outputLatency) ? Math.max(0, context.outputLatency) : 0,
+        channelCount: Number.isFinite(settings.channelCount) ? settings.channelCount : null,
+        inputSampleRate: Number.isFinite(settings.sampleRate) ? settings.sampleRate : null,
         timing: rate ? core.timing(rate, context.outputLatency) : null };
     }
 

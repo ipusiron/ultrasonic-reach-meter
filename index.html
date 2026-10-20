@@ -48,6 +48,7 @@
     </section>
     <section class="card" aria-labelledby="environment-title">
       <h2 id="environment-title" data-i18n="environment"></h2>
+      <h3 data-i18n="deviceEnvironment"></h3>
       <dl>
         <div><dt data-i18n="sampleRate"></dt><dd id="env-sampleRate" data-i18n="unset"></dd></div>
         <div><dt data-i18n="upper"></dt><dd id="env-upper" data-i18n="unset"></dd></div>
@@ -55,7 +56,26 @@
         <div><dt data-i18n="noiseSuppression"></dt><dd id="env-noiseSuppression" data-i18n="unset"></dd></div>
         <div><dt data-i18n="autoGainControl"></dt><dd id="env-autoGainControl" data-i18n="unset"></dd></div>
         <div><dt data-i18n="session"></dt><dd id="env-session" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="startGain"></dt><dd id="env-startGain" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="outputLatency"></dt><dd id="env-outputLatency" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="channelCount"></dt><dd id="env-channelCount" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="inputSampleRate"></dt><dd id="env-inputSampleRate" data-i18n="unset"></dd></div>
       </dl>
+      <div id="hearing-environment" hidden>
+        <h3 data-i18n="hearingEnvironment"></h3>
+        <dl>
+          <div><dt data-i18n="sampleRate"></dt><dd id="hearing-env-sampleRate" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="upper"></dt><dd id="hearing-env-upper" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="echoCancellation"></dt><dd id="hearing-env-echoCancellation" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="noiseSuppression"></dt><dd id="hearing-env-noiseSuppression" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="autoGainControl"></dt><dd id="hearing-env-autoGainControl" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="session"></dt><dd id="hearing-env-session" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="startGain"></dt><dd id="hearing-env-startGain" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="outputLatency"></dt><dd id="hearing-env-outputLatency" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="channelCount"></dt><dd id="hearing-env-channelCount" data-i18n="unset"></dd></div>
+          <div><dt data-i18n="inputSampleRate"></dt><dd id="hearing-env-inputSampleRate" data-i18n="unset"></dd></div>
+        </dl>
+      </div>
       <p id="processing-note" class="warning"></p>
       <p id="ios-note" class="muted" data-i18n="iosNote"></p>
     </section>
@@ -94,6 +114,7 @@
       </div>
       <p id="hearing-status" role="status" aria-live="polite"></p>
       <p id="hearing-frequency" class="current-frequency">—</p>
+      <p id="hearing-reference" class="muted" aria-live="polite"></p>
     </section>
     <section class="card" aria-labelledby="results-title">
       <h2 id="results-title" data-i18n="results"></h2>

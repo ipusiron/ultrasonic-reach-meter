@@ -221,3 +221,56 @@ test('F2: receiver requires strictly more than ten decibels at its boundary', ()
     assert.equal(result.status, delta > 10 ? 'reached' : 'weak');
   }
 });
+
+function environment(rate, extra = {}) {
+  return core.environmentSnapshot({ sampleRate: rate, session: 'playback', outputLatency: 0.02,
+    channelCount: null, inputSampleRate: null, processing: core.processing({}), timing: core.timing(rate, 0.02), ...extra }, -30);
+}
+
+test('F3: separate immutable measurement conditions retain processing and session', () => {
+  const info = { sampleRate: 48000, session: 'play-and-record', channelCount: 1, inputSampleRate: 44100,
+    outputLatency: 0.02, processing: core.processing({ echoCancellation: false, noiseSuppression: false, autoGainControl: false }),
+    timing: core.timing(48000, 0.02) };
+  const device = core.environmentSnapshot(info, -30);
+  const hearing = environment(48000);
+  info.processing.values.echoCancellation = 'on';
+  assert.equal(device.processing.values.echoCancellation, 'off');
+  assert.equal(device.session, 'play-and-record');
+  assert.equal(device.startGain, -30);
+  assert.equal(device.channelCount, 1);
+  assert.equal(device.inputSampleRate, 44100);
+  assert.deepEqual(core.referenceReasons(14000, device, hearing), ['referenceConditions']);
+});
+
+test('F3: missing microphone reports do not assert a bandwidth fault or conditions change', () => {
+  const device = environment(48000, { channelCount: 1, inputSampleRate: 44100,
+    processing: core.processing({ echoCancellation: false, noiseSuppression: false, autoGainControl: false }) });
+  assert.deepEqual(core.referenceReasons(14000, device, environment(48000)), []);
+});
+
+for (const key of ['sampleRate', 'session', 'startGain', 'outputLatency', 'channelCount']) {
+  test(`F3: confirmed ${key} change makes comparison a reference`, () => {
+    const device = environment(48000, { channelCount: 1 });
+    const changes = { sampleRate: 44100, session: 'play-and-record', startGain: -29, outputLatency: 0.04, channelCount: 2 };
+    const hearing = { ...device, [key]: changes[key] };
+    assert.deepEqual(core.referenceReasons(14000, device, hearing), ['referenceConditions']);
+  });
+}
+
+for (const rate of [44100, 48000]) for (const withDevice of [false, true]) {
+  test(`F4: high-band reasons at ${rate} Hz with device=${withDevice}`, () => {
+    const hearing = environment(rate), device = withDevice ? environment(rate) : null;
+    const firstHigh = rate === 44100 ? 18500 : 20500;
+    for (const frequency of core.ladder(rate, true)) {
+      assert.deepEqual(core.referenceReasons(frequency, device, hearing), frequency >= firstHigh ? ['referenceBand'] : []);
+    }
+    assert.deepEqual(core.referenceReasons(firstHigh, device, hearing, true), ['referenceBand', 'referenceVolume']);
+  });
+}
+
+test('F4: band, level changes and measured condition changes have separate reasons', () => {
+  const device = environment(44100, { session: 'play-and-record' });
+  const hearing = environment(48000);
+  assert.deepEqual(core.referenceReasons(20500, device, hearing, true),
+    ['referenceBand', 'referenceVolume', 'referenceConditions']);
+});
