@@ -161,7 +161,7 @@ localStorageに保存するのは`ultrasonic-reach-meter.lang`と`ultrasonic-rea
 
 ### Day041 Mic Gain Logger
 
-本ツールは、[Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger)の実機検証で使った音源ページを、単体の学習ツールとして作り直したものです。
+本ツールは、[Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger)の実機検証で使った[音源ページ（Tone Sweep）](https://ipusiron.github.io/mic-gain-logger/tone_sweep.html)を、単体の学習ツールとして作り直したものです。
 元の音源ページでは、試験音の周波数を階段状に上げ、スマートフォンのマイクがどこまで拾えるかを調べていました。
 Mic Gain Loggerは[デモページ](https://ipusiron.github.io/mic-gain-logger/)から使えます。
 
