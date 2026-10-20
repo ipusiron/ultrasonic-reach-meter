@@ -286,7 +286,10 @@
   $('lang-toggle').addEventListener('click', () => {
     language = language === 'ja' ? 'en' : 'ja'; save('lang', language); render();
   });
-  $('help-toggle').addEventListener('click', () => $('help-dialog').showModal());
+  $('help-toggle').addEventListener('click', () => {
+    $('help-dialog').showModal();
+    $('help-dialog').scrollTop = 0;
+  });
   $('help-close').addEventListener('click', () => $('help-dialog').close());
   $('help-dialog').addEventListener('close', () => $('help-toggle').focus());
   $('processing-continue').addEventListener('click', () => { if (decision) decision(true); });

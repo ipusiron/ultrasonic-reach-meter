@@ -96,6 +96,27 @@ dialog {
   color: var(--fg);
 }
 dialog::backdrop { background: #0009; }
+.help-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  position: sticky; top: -20px; z-index: 1; padding-block: 12px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.help-header h2 { margin: 0; }
+.help-header button { flex-shrink: 0; }
+.help-start { margin-block: 16px 24px; padding: 16px; border: 2px solid var(--accent); border-radius: 8px; }
+.help-start h3 { margin-top: 0; }
+.help-flow { color: var(--accent); font-weight: 700; }
+.help-start ol { margin-bottom: 0; padding-left: 1.5em; }
+.help-start li + li { margin-top: 12px; }
+.help-pattern { padding-block: 8px 20px; border-bottom: 1px solid var(--border); }
+.help-pattern h3 { margin-top: 8px; }
+.help-pattern figure { margin: 0; }
+.help-diagram { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto 12px; }
+.help-diagram text { fill: currentColor; text-anchor: middle; font-size: 18px; }
+.diagram-background { fill: var(--surface); }
+.diagram-device { fill: none; stroke: currentColor; stroke-width: 2; }
+.diagram-active { color: var(--accent); }
+.diagram-other { color: var(--muted); }
 footer { padding: 24px 0; text-align: center; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); }
 .lesson-figure { max-width: 100%; height: auto; color: var(--accent); }

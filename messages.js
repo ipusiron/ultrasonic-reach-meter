@@ -6,6 +6,27 @@
   'use strict';
   return {
     "ja": {
+      "helpStartTitle": "まずは1台で試す",
+      "helpFlow": "出して拾う → 耳で聞く",
+      "helpStartDevice": "「端末の到達」で「両方」を選び、「測る」を押す。マイクの使用を許可し、測定が終わるまで待つ",
+      "helpStartHearing": "続けて「耳の上限」の「始める」を押す。音が終わったら「聞こえた」「聞こえない」で答える",
+      "helpStartResults": "「結果」で端末の到達と耳の回答を読む。比較のため、途中で端末の音量や出力先を変えない",
+      "helpPatterns": "端末の到達を測る3つのパターン",
+      "helpBothTitle": "1. 出して拾う（両方）",
+      "helpBothBody": "同じ端末のスピーカーから試験音を出し、同じ端末のマイクで拾います。端末1台で始められる、最も手軽な方法です。終わったら「耳の上限」へ進みます。",
+      "helpSendTitle": "2. 出すだけ",
+      "helpSendBody": "この端末は試験音を出します。相手の端末を「拾うだけ」にして組み合わせます。この端末のマイクは使わず、到達の判定は相手側に表示します。",
+      "helpReceiveTitle": "3. 拾うだけ",
+      "helpReceiveBody": "相手の端末を「出すだけ」にし、その試験音をこの端末のマイクで拾います。この端末から試験音は出さず、到達の判定を表示します。",
+      "helpBothDiagram": "同じ端末で試験音を出して拾う",
+      "helpSendDiagram": "この端末から相手のマイクへ音を出す",
+      "helpReceiveDiagram": "相手の音をこの端末のマイクで拾う",
+      "helpSameDevice": "同じ端末",
+      "helpThisDevice": "この端末",
+      "helpOtherDevice": "相手の端末",
+      "helpSpeaker": "スピーカー",
+      "helpMicrophone": "マイク",
+      "helpFrequencyNote": "両テストの対象周波数は異なります。8・10・12・13・17.5kHzは耳のテストだけで使うため、結果表の端末側は「未測定」と表示されます。",
       "title": "Ultrasonic Reach Meter",
       "description": "聞こえない音でも、端末は出して拾えることがあります。端末の到達と耳の回答を、分けて確かめます。",
       "theme": "明暗を切り替える",
@@ -250,6 +271,34 @@
       "lesson10Source1": "Web Audio API"
     },
     "en": {
+      "helpStartTitle": "Start with one device",
+      "helpFlow": "Emit and receive → Listen with your ears",
+      "helpStartDevice": "Under “Device reach,” select “Emit and receive” and press “Measure.” Allow microphone acce" +
+        "ss and wait for the test to finish.",
+      "helpStartHearing": "Next, press “Start” under “What you can hear.” After each tone, choose “Heard it” or “Did " +
+        "not hear it.”",
+      "helpStartResults": "Read the device and hearing results together. Keep the device volume and output route unch" +
+        "anged for the comparison.",
+      "helpPatterns": "Three roles for measuring device reach",
+      "helpBothTitle": "1. Emit and receive",
+      "helpBothBody": "This device emits tones through its speaker and receives them through its microphone. This" +
+        " is the easiest setup: one device is enough. Continue with “What you can hear” afterward.",
+      "helpSendTitle": "2. Emit only",
+      "helpSendBody": "This device emits the test tones. Set the other device to “Receive only.” This device does" +
+        " not use its microphone; reach results appear on the receiver.",
+      "helpReceiveTitle": "3. Receive only",
+      "helpReceiveBody": "Set the other device to “Emit only.” This device receives its tones through the microphone" +
+        " and displays reach results, without emitting test tones.",
+      "helpBothDiagram": "Emit and receive on the same device",
+      "helpSendDiagram": "Emit from this device to another",
+      "helpReceiveDiagram": "Receive another device’s tones here",
+      "helpSameDevice": "Same device",
+      "helpThisDevice": "This device",
+      "helpOtherDevice": "Other device",
+      "helpSpeaker": "Speaker",
+      "helpMicrophone": "Microphone",
+      "helpFrequencyNote": "The tests use different frequency lists. The 8, 10, 12, 13 and 17.5kHz steps are used only" +
+        " in the hearing test, so their device column shows “Not measured.”",
       "title": "Ultrasonic Reach Meter",
       "description": "A device may emit and pick up sounds you cannot hear. Compare its reach with your own " +
         "responses.",
