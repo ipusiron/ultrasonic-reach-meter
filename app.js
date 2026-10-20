@@ -69,7 +69,9 @@
   }
 
   function reasons(frequency) {
-    return core.referenceReasons(frequency, deviceEnvironment, hearingEnvironment, changedLevel || hearingLevelChanged);
+    const keys = core.referenceReasons(frequency, deviceEnvironment, hearingEnvironment, changedLevel || hearingLevelChanged);
+    if (hearing && (hearing.phase === 'stopped' || hearing.confirmed === false)) keys.push('referenceUnconfirmed');
+    return keys;
   }
 
   function referenceText(keys) {
