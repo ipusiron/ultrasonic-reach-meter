@@ -192,3 +192,23 @@ test('F2: threshold needs two evaluated times at least half a second apart', () 
   assert.equal(core.receive([], [], false).status, 'unavailable');
   assert.equal(core.receive([], []).status, 'unmeasured');
 });
+
+test('F2: receiver rejects tiny relative peaks below its explicit power floor', () => {
+  assert.equal(core.RECEIVE_POWER_FLOOR, 10 ** (-120 / 10));
+  const powers = Array.from({ length: 100 }, (_, index) => index >= 20 && index < 40 ? 1e-16 : 1e-18);
+  const result = core.receive(powers, powers.map((_, index) => index * 0.171));
+  assert.equal(result.status, 'absent');
+  assert.equal(result.delta, 0);
+  assert.equal(result.background, 1e-18);
+});
+
+test('F2: receiver floor also limits sensitivity when background is very low', () => {
+  for (const [aboveFloor, expected] of [[3, 'absent'], [6, 'weak'], [12, 'reached']]) {
+    const floor = 10 ** (-120 / 10);
+    const powers = Array.from({ length: 100 }, (_, index) =>
+      index >= 20 && index < 40 ? floor * 10 ** (aboveFloor / 10) : floor / 100);
+    const result = core.receive(powers, powers.map((_, index) => index * 0.171));
+    near(result.delta, aboveFloor);
+    assert.equal(result.status, expected);
+  }
+});

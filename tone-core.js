@@ -9,6 +9,7 @@
   const FRAME_COUNT = 8;
   const DEFAULT_DB = -30;
   const MAX_DB = -12;
+  const RECEIVE_POWER_FLOOR = 10 ** (-120 / 10);
   const DEVICE_FREQUENCIES = Object.freeze([
     1000, 14000, 15000, 16000, 17000, 18000, 18500,
     19000, 19500, 20000, 20500, 21000, 21500
@@ -121,7 +122,8 @@
     let repeated = false;
     for (let end = FRAME_COUNT - 1; end < powers.length; end++) {
       const signal = meanPower(powers.slice(end - FRAME_COUNT + 1, end + 1));
-      const delta = deltaDb(signal, background);
+      // A design floor, not a calibrated acoustic noise floor.
+      const delta = deltaDb(Math.max(signal, RECEIVE_POWER_FLOOR), Math.max(background, RECEIVE_POWER_FLOOR));
       maximum = Math.max(maximum, delta);
       if (delta >= 10) {
         if (firstHigh === null) firstHigh = times[end];
@@ -178,7 +180,7 @@
     return 'deviceUnknown';
   }
 
-  return Object.freeze({ FFT_SIZE, FRAME_COUNT, DEFAULT_DB, MAX_DB, DEVICE_FREQUENCIES, HEARING_FREQUENCIES,
+  return Object.freeze({ FFT_SIZE, FRAME_COUNT, DEFAULT_DB, MAX_DB, RECEIVE_POWER_FLOOR, DEVICE_FREQUENCIES, HEARING_FREQUENCIES,
     upperFrequency, isReference, ladder, gain, toneSamples, rampPoints, frameInterval, timing,
     frequencyBin, bandPower, meanPower, deltaDb, classify, receive, processing,
     hearingStart, hearingAnswer, hearingReplay, hearingVolumeChanged, interpretation });
