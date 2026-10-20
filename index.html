@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'; frame-src 'none'; object-src 'none'; connect-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Ultrasonic Reach Meter</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <script src="tone-core.js" defer></script>
+  <script src="audio-io.js" defer></script>
+  <script src="messages.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1 data-i18n="title"></h1>
+    <div class="header-tools">
+      <button id="theme-toggle" class="icon-button" type="button" data-label="theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>
+        </svg>
+      </button>
+      <button id="lang-toggle" class="icon-button" type="button" data-label="language">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M3 19 8 5l5 14M5 14h6M14 7h8M18 4v3M21 7c-1 7-3 10-7 13M15 11c1 4 3 7 7 9"/>
+        </svg>
+      </button>
+      <button id="help-toggle" class="icon-button" type="button" data-label="help">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01"/>
+        </svg>
+      </button>
+    </div>
+    <p data-i18n="description"></p>
+  </header>
+  <noscript><p>JavaScriptを有効にしてください。Enable JavaScript to use this tool.</p></noscript>
+  <main>
+    <section class="card" aria-labelledby="before-title">
+      <h2 id="before-title" data-i18n="before"></h2>
+      <p data-i18n="safety1"></p>
+      <p data-i18n="safety2"></p>
+      <p data-i18n="safety3"></p>
+      <label for="gain"><span data-i18n="gain"></span> <output id="gain-value">−30dBFS</output></label>
+      <input id="gain" type="range" min="-60" max="-12" value="-30" step="1">
+      <p class="muted" data-i18n="gainHelp"></p>
+    </section>
+    <section class="card" aria-labelledby="environment-title">
+      <h2 id="environment-title" data-i18n="environment"></h2>
+      <dl>
+        <div><dt data-i18n="sampleRate"></dt><dd id="env-sampleRate" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="upper"></dt><dd id="env-upper" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="echoCancellation"></dt><dd id="env-echoCancellation" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="noiseSuppression"></dt><dd id="env-noiseSuppression" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="autoGainControl"></dt><dd id="env-autoGainControl" data-i18n="unset"></dd></div>
+        <div><dt data-i18n="session"></dt><dd id="env-session" data-i18n="unset"></dd></div>
+      </dl>
+      <p id="processing-note" class="warning"></p>
+      <p id="ios-note" class="muted" data-i18n="iosNote"></p>
+    </section>
+    <section class="card" aria-labelledby="reach-title">
+      <h2 id="reach-title" data-i18n="reach"></h2>
+      <fieldset><legend data-i18n="role"></legend><div class="choices">
+        <label class="choice"><input type="radio" name="role" value="both" checked>
+          <span data-i18n="both"></span></label>
+        <label class="choice"><input type="radio" name="role" value="send" >
+          <span data-i18n="send"></span></label>
+        <label class="choice"><input type="radio" name="role" value="receive" >
+          <span data-i18n="receive"></span></label>
+      </div></fieldset>
+      <p data-i18n="roleHelp"></p>
+      <p data-i18n="timingNote"></p>
+      <p class="muted" data-i18n="receiveFloor"></p>
+      <p id="duration" class="muted"></p>
+      <div class="actions">
+        <button id="measure" type="button" class="primary" data-i18n="measure" disabled></button>
+        <button id="stop" type="button" data-i18n="stop" disabled></button>
+      </div>
+      <p id="status" class="readout" role="status" aria-live="polite" data-i18n="idle"></p>
+      <p id="current-frequency" class="current-frequency">—</p>
+      <p id="error" class="warning" role="alert"></p>
+      <div id="reach-bars"></div>
+    </section>
+    <section class="card" aria-labelledby="hearing-title">
+      <h2 id="hearing-title" data-i18n="hearing"></h2>
+      <p data-i18n="hearingHelp"></p>
+      <div class="actions">
+        <button id="hearing-start" type="button" class="primary" data-i18n="start" disabled></button>
+        <button id="hearing-stop" type="button" data-i18n="stop" disabled></button>
+        <button id="heard" type="button" data-i18n="heard" disabled></button>
+        <button id="not-heard" type="button" data-i18n="notHeard" disabled></button>
+        <button id="replay" type="button" data-i18n="replay" disabled></button>
+      </div>
+      <p id="hearing-status" role="status" aria-live="polite"></p>
+      <p id="hearing-frequency" class="current-frequency">—</p>
+    </section>
+    <section class="card" aria-labelledby="results-title">
+      <h2 id="results-title" data-i18n="results"></h2>
+      <p id="result-summary" data-i18n="empty"></p>
+      <div class="table-wrap"><table id="results-table" hidden>
+        <thead><tr><th data-i18n="frequency"></th><th id="device-column" data-i18n="deviceColumn"></th>
+          <th data-i18n="hearingColumn"></th><th data-i18n="reading"></th></tr></thead>
+        <tbody id="results-body"></tbody>
+      </table></div>
+    </section>
+    <section class="card" aria-labelledby="learn-title">
+      <h2 id="learn-title" data-i18n="learn"></h2>
+      <p data-i18n="learnIntro"></p>
+      <div id="lessons">
+        <details id="lesson-1">
+          <summary data-i18n="lesson1Title"></summary>
+          <p data-i18n="lesson1Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson1Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson1Head0"></th>
+              <th scope="col" data-i18n="lesson1Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson1Row0Col0"></th>
+                <td data-i18n="lesson1Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson1Row1Col0"></th>
+                <td data-i18n="lesson1Row1Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://www.petsymposium.org/popets/2017/popets-2017-0018.pdf" rel="noopener noreferrer" data-i18n="lesson1Source0"></a>
+          <a href="https://vamos.mlsec.org/docs/2017a-eurosp.pdf" rel="noopener noreferrer" data-i18n="lesson1Source1"></a>
+          <a href="https://www.ftc.gov/news-events/press-releases/2016/03/ftc-issues-warning-letters-app-developers-using-silverpush-code" rel="noopener noreferrer" data-i18n="lesson1Source2"></a>
+        </details>
+        <details id="lesson-2">
+          <summary data-i18n="lesson2Title"></summary>
+          <p data-i18n="lesson2Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson2Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson2Head0"></th>
+              <th scope="col" data-i18n="lesson2Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson2Row0Col0"></th>
+                <td data-i18n="lesson2Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson2Row1Col0"></th>
+                <td data-i18n="lesson2Row1Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson2Row2Col0"></th>
+                <td data-i18n="lesson2Row2Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://www.petsymposium.org/popets/2017/popets-2017-0018.pdf" rel="noopener noreferrer" data-i18n="lesson2Source0"></a>
+        </details>
+        <details id="lesson-3">
+          <summary data-i18n="lesson3Title"></summary>
+          <p data-i18n="lesson3Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson3Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson3Head0"></th>
+              <th scope="col" data-i18n="lesson3Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson3Row0Col0"></th>
+                <td data-i18n="lesson3Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson3Row1Col0"></th>
+                <td data-i18n="lesson3Row1Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson3Row2Col0"></th>
+                <td data-i18n="lesson3Row2Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://vamos.mlsec.org/docs/2017a-eurosp.pdf" rel="noopener noreferrer" data-i18n="lesson3Source0"></a>
+        </details>
+        <details id="lesson-4">
+          <summary data-i18n="lesson4Title"></summary>
+          <p data-i18n="lesson4Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson4Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson4Head0"></th>
+              <th scope="col" data-i18n="lesson4Head1"></th>
+              <th scope="col" data-i18n="lesson4Head2"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson4Row0Col0"></th>
+                <td data-i18n="lesson4Row0Col1"></td>
+                <td data-i18n="lesson4Row0Col2"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson4Row1Col0"></th>
+                <td data-i18n="lesson4Row1Col1"></td>
+                <td data-i18n="lesson4Row1Col2"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://www.w3.org/TR/webaudio-1.0/" rel="noopener noreferrer" data-i18n="lesson4Source0"></a>
+        </details>
+        <details id="lesson-5">
+          <summary data-i18n="lesson5Title"></summary>
+          <p data-i18n="lesson5Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson5Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson5Head0"></th>
+              <th scope="col" data-i18n="lesson5Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson5Row0Col0"></th>
+                <td data-i18n="lesson5Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson5Row1Col0"></th>
+                <td data-i18n="lesson5Row1Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson5Row2Col0"></th>
+                <td data-i18n="lesson5Row2Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <p class="muted" data-i18n="receiveFloor"></p>
+          <a href="https://w3c.github.io/mediacapture-main/" rel="noopener noreferrer" data-i18n="lesson5Source0"></a>
+          <a href="https://arxiv.org/abs/1807.07617" rel="noopener noreferrer" data-i18n="lesson5Source1"></a>
+        </details>
+        <details id="lesson-6">
+          <summary data-i18n="lesson6Title"></summary>
+          <p data-i18n="lesson6Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson6Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson6Head0"></th>
+              <th scope="col" data-i18n="lesson6Head1"></th>
+              <th scope="col" data-i18n="lesson6Head2"></th>
+              <th scope="col" data-i18n="lesson6Head3"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson6Row0Col0"></th>
+                <td data-i18n="lesson6Row0Col1"></td>
+                <td data-i18n="lesson6Row0Col2"></td>
+                <td data-i18n="lesson6Row0Col3"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson6Row1Col0"></th>
+                <td data-i18n="lesson6Row1Col1"></td>
+                <td data-i18n="lesson6Row1Col2"></td>
+                <td data-i18n="lesson6Row1Col3"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson6Row2Col0"></th>
+                <td data-i18n="lesson6Row2Col1"></td>
+                <td data-i18n="lesson6Row2Col2"></td>
+                <td data-i18n="lesson6Row2Col3"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson6Row3Col0"></th>
+                <td data-i18n="lesson6Row3Col1"></td>
+                <td data-i18n="lesson6Row3Col2"></td>
+                <td data-i18n="lesson6Row3Col3"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <div class="table-wrap"><table>
+            <caption data-i18n="wangCaption"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="wangHead0"></th>
+              <th scope="col" data-i18n="wangHead1"></th>
+              <th scope="col" data-i18n="wangHead2"></th>
+            </tr></thead><tbody>
+              <tr>
+                <td data-i18n="wangRow0Col0"></td>
+                <td data-i18n="wangRow0Col1"></td>
+                <td data-i18n="wangRow0Col2"></td>
+              </tr>
+              <tr>
+                <td data-i18n="wangRow1Col0"></td>
+                <td data-i18n="wangRow1Col1"></td>
+                <td data-i18n="wangRow1Col2"></td>
+              </tr>
+              <tr>
+                <td data-i18n="wangRow2Col0"></td>
+                <td data-i18n="wangRow2Col1"></td>
+                <td data-i18n="wangRow2Col2"></td>
+              </tr>
+              <tr>
+                <td data-i18n="wangRow3Col0"></td>
+                <td data-i18n="wangRow3Col1"></td>
+                <td data-i18n="wangRow3Col2"></td>
+              </tr>
+            </tbody></table></div>
+          <p data-i18n="ageTableNote"></p>
+          <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3606020/" rel="noopener noreferrer" data-i18n="lesson6Source0"></a>
+          <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8394048/" rel="noopener noreferrer" data-i18n="lesson6Source1"></a>
+          <a href="https://www.iso.org/standard/42916.html" rel="noopener noreferrer" data-i18n="lesson6Source2"></a>
+        </details>
+        <details id="lesson-7">
+          <summary data-i18n="lesson7Title"></summary>
+          <p data-i18n="lesson7Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson7Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson7Head0"></th>
+              <th scope="col" data-i18n="lesson7Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson7Row0Col0"></th>
+                <td data-i18n="lesson7Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson7Row1Col0"></th>
+                <td data-i18n="lesson7Row1Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://developer.android.com/about/versions/pie/android-9.0-changes-all" rel="noopener noreferrer" data-i18n="lesson7Source0"></a>
+          <a href="https://developer.android.com/about/versions/12/behavior-changes-all" rel="noopener noreferrer" data-i18n="lesson7Source1"></a>
+        </details>
+        <details id="lesson-8">
+          <summary data-i18n="lesson8Title"></summary>
+          <p data-i18n="lesson8Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson8Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson8Head0"></th>
+              <th scope="col" data-i18n="lesson8Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson8Row0Col0"></th>
+                <td data-i18n="lesson8Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson8Row1Col0"></th>
+                <td data-i18n="lesson8Row1Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://github.com/ggerganov/ggwave" rel="noopener noreferrer" data-i18n="lesson8Source0"></a>
+        </details>
+        <details id="lesson-9">
+          <summary data-i18n="lesson9Title"></summary>
+          <p data-i18n="lesson9Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson9Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson9Head0"></th>
+              <th scope="col" data-i18n="lesson9Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson9Row0Col0"></th>
+                <td data-i18n="lesson9Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson9Row1Col0"></th>
+                <td data-i18n="lesson9Row1Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://github.com/ggerganov/ggwave" rel="noopener noreferrer" data-i18n="lesson9Source0"></a>
+        </details>
+        <details id="lesson-10">
+          <summary data-i18n="lesson10Title"></summary>
+          <p data-i18n="lesson10Body"></p>
+          <div class="table-wrap"><table>
+            <caption data-i18n="lesson10Title"></caption>
+            <thead><tr>
+              <th scope="col" data-i18n="lesson10Head0"></th>
+              <th scope="col" data-i18n="lesson10Head1"></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row" data-i18n="lesson10Row0Col0"></th>
+                <td data-i18n="lesson10Row0Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson10Row1Col0"></th>
+                <td data-i18n="lesson10Row1Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson10Row2Col0"></th>
+                <td data-i18n="lesson10Row2Col1"></td>
+              </tr>
+              <tr>
+                <th scope="row" data-i18n="lesson10Row3Col0"></th>
+                <td data-i18n="lesson10Row3Col1"></td>
+              </tr>
+            </tbody>
+          </table></div>
+          <a href="https://www.ftc.gov/news-events/press-releases/2016/03/ftc-issues-warning-letters-app-developers-using-silverpush-code" rel="noopener noreferrer" data-i18n="lesson10Source0"></a>
+          <a href="https://www.w3.org/TR/webaudio-1.0/" rel="noopener noreferrer" data-i18n="lesson10Source1"></a>
+        </details>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <p data-i18n="privacy"></p>
+    <p data-i18n="author"></p>
+    <a href="https://github.com/ipusiron/ultrasonic-reach-meter" rel="noopener noreferrer" data-i18n="repository"></a>
+    <p>Day119 · MIT License · © 2026 IPUSIRON</p>
+  </footer>
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <h2 id="help-title" data-i18n="help"></h2>
+    <p data-i18n="description"></p>
+    <p data-i18n="twoDevices"></p>
+    <p data-i18n="limits"></p>
+    <p data-i18n="receiveFloor"></p>
+    <p data-i18n="safety1"></p><p data-i18n="safety2"></p><p data-i18n="safety3"></p>
+    <p data-i18n="privacy"></p>
+    <button id="help-close" type="button" data-i18n="close"></button>
+  </dialog>
+  <dialog id="processing-dialog" aria-labelledby="processing-title">
+    <h2 id="processing-title" data-i18n="environment"></h2>
+    <p data-i18n="processingWarning"></p>
+    <button id="processing-continue" type="button" data-i18n="continue"></button>
+    <button id="processing-cancel" type="button" data-i18n="cancel"></button>
+  </dialog>
+</body>
+</html>

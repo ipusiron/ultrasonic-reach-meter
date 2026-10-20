@@ -1,0 +1,9 @@
+{
+  "name": "ultrasonic-reach-meter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Compare your device's near-ultrasound reach with what you can hear",
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=22" },
+  "license": "MIT"
+}
