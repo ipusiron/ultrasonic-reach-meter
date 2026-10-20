@@ -157,7 +157,29 @@ localStorageに保存するのは`ultrasonic-reach-meter.lang`と`ultrasonic-rea
 
 連続再生のボタンはなく、階段は自動で終わります。停止ボタン、タブが隠れたとき、マイクの切断や音声の中断で停止します。ページを離れるとAudioContextを閉じ、停止時にはマイクを解放します。
 
-## 🔗 参考文献と関連ツール
+## 🔗 関連ツール
+
+### Day041 Mic Gain Logger
+
+本ツールは、[Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger)の実機検証で使った音源ページを、単体の学習ツールとして作り直したものです。
+元の音源ページでは、試験音の周波数を階段状に上げ、スマートフォンのマイクがどこまで拾えるかを調べていました。
+Mic Gain Loggerは[デモページ](https://ipusiron.github.io/mic-gain-logger/)から使えます。
+
+Day119は試験音を鳴らし、その場で「届いた／届かない」を確かめる能動的なテストを担当します。
+「拾うだけ」では、別の端末から試験音を出します。
+Day041は録音せずに、音の強さと超音波帯（18〜22kHz）のエネルギーを長時間記録し続ける、受動的な観測を担当します。
+どちらも何の音かは判定しません。
+
+先にDay119の「拾うだけ」か「出して拾う（両方）」で、18〜21kHzのうち、その端末で試せる周波数をマイクが拾えるか確かめます。
+そのあと同じ端末でDay041を使い、平時の超音波帯を記録します。
+拾える帯域を先に確かめておくと、Day041の超音波帯に反応がないときに、「マイクが拾えないから出ない」のか「その帯域の音が鳴っていない」のかを分けて考える手がかりになります。
+ただし、Day119の「届かない」だけでは、スピーカー・マイク・音の加工・距離のどこが原因かは分離できません。
+両ツールで入力機器・ブラウザー・サンプルレート・音の加工の状態を確認し、条件の違いも記録を読む際に考慮してください。
+
+逆に、Day041で超音波帯が平時より高い時間帯を見つけたら、Day119で同じ帯域をその端末が拾えることを確かめておくと、記録を読む前提がそろいます。
+音の種類や発信源を特定する結果ではありません。
+
+## 📚 参考文献
 
 - [Mavroudis et al., On the Privacy and Security of the Ultrasound Ecosystem（2017）](https://www.petsymposium.org/popets/2017/popets-2017-0018.pdf)
 - [Arp et al., Privacy Threats through Ultrasonic Side Channels on Mobile Devices（2017）](https://vamos.mlsec.org/docs/2017a-eurosp.pdf)
@@ -165,7 +187,6 @@ localStorageに保存するのは`ultrasonic-reach-meter.lang`と`ultrasonic-rea
 - [W3C Web Audio API](https://www.w3.org/TR/webaudio-1.0/)、[Media Capture and Streams](https://www.w3.org/TR/mediacapture-streams/)
 - [Lee et al.（2012）の高域の参考値](https://pmc.ncbi.nlm.nih.gov/articles/PMC3606020/)、[Wang et al.（2021）の参考値](https://pmc.ncbi.nlm.nih.gov/articles/PMC8394048/)
 - [WebKitの過去の報告179411](https://bugs.webkit.org/show_bug.cgi?id=179411)、[311451](https://bugs.webkit.org/show_bug.cgi?id=311451)、[326286](https://bugs.webkit.org/show_bug.cgi?id=326286)
-- [Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger)（[デモ](https://ipusiron.github.io/mic-gain-logger/)）—録音せずに音の強さを長時間記録する関連ツール
 
 ## 📁 ディレクトリー構造
 

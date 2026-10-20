@@ -11,10 +11,10 @@ const docs = [read('README.md'), read('README.en.md')];
 const headings = [
   ['🌐 デモページ', '📸 スクリーンショット', '✨ 機能', '📖 使い方', '🔬 試験音と判定',
     '🎯 ユースケース', '🌍 ブラウザーごとの違い', '⚠️ 制約と前提', '🔒 プライバシーと安全対策',
-    '🔗 参考文献と関連ツール', '📁 ディレクトリー構造', '💻 動作環境', '📄 ライセンス', '🛠️ このツールについて'],
+    '🔗 関連ツール', '📚 参考文献', '📁 ディレクトリー構造', '💻 動作環境', '📄 ライセンス', '🛠️ このツールについて'],
   ['🌐 Demo', '📸 Screenshots', '✨ Features', '📖 Usage', '🔬 Test tones and classification',
     '🎯 Use cases', '🌍 Browser differences', '⚠️ Limitations and assumptions', '🔒 Privacy and safeguards',
-    '🔗 References and related tools', '📁 Directory structure', '💻 Requirements', '📄 License', '🛠️ About this tool']
+    '🔗 Related tools', '📚 References', '📁 Directory structure', '💻 Requirements', '📄 License', '🛠️ About this tool']
 ];
 
 test('Readmes retain the ordered bilingual sections and project identity', () => {
@@ -27,6 +27,23 @@ test('Readmes retain the ordered bilingual sections and project identity', () =>
   });
   assert.match(docs[0], /\[English\]\(README.en.md\) · 日本語/);
   assert.match(docs[1], /^English · \[日本語\]\(README.md\)/);
+});
+
+test('Related tools sections link only to Day041 with identical repository and demo URLs', () => {
+  const sectionHeadings = ['🔗 関連ツール', '🔗 Related tools'];
+  const expected = [
+    'https://github.com/ipusiron/mic-gain-logger',
+    'https://ipusiron.github.io/mic-gain-logger/'
+  ];
+  const links = docs.map((text, i) => {
+    const section = text.match(new RegExp(`^## ${sectionHeadings[i]}\\n([\\s\\S]*?)(?=^## )`, 'm'));
+    assert.ok(section, sectionHeadings[i]);
+    assert.match(section[1], /^### Day041 Mic Gain Logger$/m);
+    const urls = [...section[1].matchAll(/\]\((https:\/\/[^)\s]+)\)/g)].map(match => match[1]);
+    assert.deepEqual(urls, expected, sectionHeadings[i]);
+    return urls;
+  });
+  assert.deepEqual(links[0], links[1]);
 });
 
 test('Japanese metadata supplies the complete hub entry', () => {

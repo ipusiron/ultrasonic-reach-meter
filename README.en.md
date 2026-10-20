@@ -134,7 +134,29 @@ Only `ultrasonic-reach-meter.lang` and `ultrasonic-reach-meter.theme` are stored
 
 There is no continuous-play button, and sequences end automatically. The stop button, a hidden tab, a disconnected microphone or interrupted audio stops measurement. Leaving the page closes AudioContext; stopping releases the microphone.
 
-## 🔗 References and related tools
+## 🔗 Related tools
+
+### Day041 Mic Gain Logger
+
+This tool grew out of the tone-source page used for physical-device testing of [Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger), rebuilt as a standalone learning tool.
+The original page raised the test-tone frequency in steps to check how high a smartphone microphone could pick it up.
+Mic Gain Logger is available on its [demo page](https://ipusiron.github.io/mic-gain-logger/).
+
+Day119 provides an active test: play test tones and check whether they reach the microphone at that moment.
+In Receive only mode, another device supplies the test tones.
+Day041 provides passive observation: it continuously logs sound levels and energy in the ultrasonic band (18–22kHz) over longer periods without recording audio.
+Neither tool identifies what the sound is.
+
+First, use Day119 in Receive only or Both (emit and receive) mode to check which test frequencies within 18–21kHz are available on the device and can reach its microphone.
+Then use Day041 on the same device to record the ultrasonic band under ordinary conditions.
+Checking which frequencies can be received helps you distinguish between a microphone that cannot pick up that band and an absence of sound in that band when Day041 shows no response.
+However, a Not reached result in Day119 alone cannot separate limitations of the speaker, microphone, audio processing, or distance.
+Check the input device, browser, sample rate, and audio-processing settings in both tools, and account for any differences when reading the log.
+
+Conversely, if Day041 shows periods when ultrasonic-band energy is above its usual level, use Day119 to check that the same device can receive that band so you have a basis for interpreting the log.
+This does not identify the type or source of the sound.
+
+## 📚 References
 
 - [Mavroudis et al., On the Privacy and Security of the Ultrasound Ecosystem (2017)](https://www.petsymposium.org/popets/2017/popets-2017-0018.pdf)
 - [Arp et al., Privacy Threats through Ultrasonic Side Channels on Mobile Devices (2017)](https://vamos.mlsec.org/docs/2017a-eurosp.pdf)
@@ -142,7 +164,6 @@ There is no continuous-play button, and sequences end automatically. The stop bu
 - [W3C Web Audio API](https://www.w3.org/TR/webaudio-1.0/), [Media Capture and Streams](https://www.w3.org/TR/mediacapture-streams/)
 - [Lee et al. (2012)](https://pmc.ncbi.nlm.nih.gov/articles/PMC3606020/), [Wang et al. (2021)](https://pmc.ncbi.nlm.nih.gov/articles/PMC8394048/)
 - [Historical WebKit report 179411](https://bugs.webkit.org/show_bug.cgi?id=179411), [311451](https://bugs.webkit.org/show_bug.cgi?id=311451), [326286](https://bugs.webkit.org/show_bug.cgi?id=326286)
-- [Day041 Mic Gain Logger](https://github.com/ipusiron/mic-gain-logger) ([demo](https://ipusiron.github.io/mic-gain-logger/)): long-term sound-level logging without recording audio
 
 ## 📁 Directory structure
 
