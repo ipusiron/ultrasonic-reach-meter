@@ -45,15 +45,17 @@ Switch between Japanese and English, and between dark and light themes. Language
 
 ## 📖 Usage
 
+The easiest starting point is one device: finish “Emit and receive,” then continue with “What you can hear.” Help includes three SVG diagrams for emit-and-receive, emit-only and receive-only roles, showing which device emits and which receives.
+
 1. Choose a place without people or pets nearby and start with low device volume. Keep speakers away from ears.
 2. For one device, select “Both,” start measurement and allow microphone access. Read the actual settings in “This environment.”
 3. The sequence starts with a 1kHz self-check. If it is not received, measurement stops; check volume, output route, microphone permission and processing.
 4. Start the hearing sequence after device measurement. Answer each step; replay is available once per step. Two consecutive misses end the ascent, followed by confirmation of the highest heard step.
 5. Read the result table. Changed volume or frequencies near the upper limit make interpretation a reference only.
 
-For two devices, select “Send only” on the PC and “Receive only” on an iPhone or another receiver. Face the speaker and microphone toward each other at about 10cm. Start the receiver first, then the PC. Reception ends after 60 seconds. If the sending sequence exceeds 60 seconds in your environment, the measurement window may not cover every step. The result describes that particular sender-to-receiver path.
+For two devices, select “Emit only” on the PC and “Receive only” on an iPhone or another receiver. Face the speaker and microphone toward each other at about 10cm. Start the receiver first, then the PC. Reception ends after 60 seconds. If the sending sequence exceeds 60 seconds in your environment, the measurement window may not cover every step. The result describes that particular sender-to-receiver path.
 
-“Both” uses two independent trials. In the 48kHz test environment it took about 79 seconds; “Send only” took about 38 seconds. Duration varies with sampleRate, output latency and scheduling. The page shows an estimate.
+“Emit and receive” uses two independent trials. In the 48kHz test environment it took about 79 seconds; “Emit only” took about 38 seconds. Duration varies with sampleRate, output latency and scheduling. The page shows an estimate.
 
 ## 🔬 Test tones and classification
 
@@ -70,8 +72,8 @@ AnalyserNode uses fftSize 8192 and smoothingTimeConstant 0. Reads are separated 
 
 | Role | Classification |
 |---|---|
-| Both | Compare eight silent frames immediately before the tone with eight tone frames. Two independent trials in succession at +10dB or higher mean reached; otherwise a maximum difference of at least +4dB is weak, and less is not reached. |
-| Send only | Display each frequency and emit a short burst. No microphone or reach classification. |
+| Emit and receive | Compare eight silent frames immediately before the tone with eight tone frames. Two independent trials in succession at +10dB or higher mean reached; otherwise a maximum difference of at least +4dB is weak, and less is not reached. |
+| Emit only | Display each frequency and emit a short burst. No microphone or reach classification. |
 | Receive only | Use the temporal median of each band over 60 seconds as background, compared with eight-frame moving averages. Two evaluations above +10dB separated by at least 0.5 seconds mean reached; both may occur within one burst. |
 
 In receive-only mode, signal and background powers are each floored at 10⁻¹² (−120dB in FFT values) before their ratio is calculated. This prevents tiny numerical components from being classified as received solely because of a large ratio. A synthetic input produced +15.1dB at the absent 21.5kHz tone against background near −173dB. This design floor is not a calibrated sound-pressure value and may miss faint signals. It does not apply to “Both.”
@@ -180,7 +182,7 @@ tone-core.js contains DOM-independent calculations; audio-io.js manages audio an
 
 ## 💻 Requirements
 
-A browser with Web Audio API is required. “Both” and “Receive only” also require microphone permission. Development checks require Node.js 22 or later, with no package installation.
+A browser with Web Audio API is required. “Emit and receive” and “Receive only” also require microphone permission. Development checks require Node.js 22 or later, with no package installation.
 
 ```sh
 npm test
