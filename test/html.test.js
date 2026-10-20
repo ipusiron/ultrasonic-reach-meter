@@ -60,9 +60,23 @@ test('Only explicit display preferences are persisted and output gain is capped'
 });
 
 test('External HTML links are explicitly allowed and isolated', () => {
-  const allowed = ['https://github.com/ipusiron/ultrasonic-reach-meter'];
+  const allowed = [
+    "https://arxiv.org/abs/1807.07617",
+    "https://developer.android.com/about/versions/12/behavior-changes-all",
+    "https://developer.android.com/about/versions/pie/android-9.0-changes-all",
+    "https://github.com/ggerganov/ggwave",
+    "https://github.com/ipusiron/ultrasonic-reach-meter",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC3606020/",
+    "https://pmc.ncbi.nlm.nih.gov/articles/PMC8394048/",
+    "https://vamos.mlsec.org/docs/2017a-eurosp.pdf",
+    "https://w3c.github.io/mediacapture-main/",
+    "https://www.ftc.gov/news-events/press-releases/2016/03/ftc-issues-warning-letters-app-developers-using-silverpush-code",
+    "https://www.iso.org/standard/42916.html",
+    "https://www.petsymposium.org/popets/2017/popets-2017-0018.pdf",
+    "https://www.w3.org/TR/webaudio-1.0/"
+  ];
   const links = [...html.matchAll(/<a\b([^>]+)>/g)];
-  assert.equal(links.length, allowed.length);
-  assert.deepEqual(links.map(([, attrs]) => /href="([^"]+)"/.exec(attrs)[1]).sort(), allowed.sort());
+  assert.equal(links.length, 18);
+  assert.deepEqual([...new Set(links.map(([, attrs]) => /href="([^"]+)"/.exec(attrs)[1]))].sort(), allowed.sort());
   for (const [, attrs] of links) assert.match(attrs, /rel="noopener noreferrer"/);
 });

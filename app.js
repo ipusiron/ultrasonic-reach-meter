@@ -17,6 +17,10 @@
   let environment = null;
   let rows = [];
   let hearing = null;
+  let hearingActive = false;
+  let hearingPlaying = false;
+  let measuredRate = null;
+  let hearingRate = null;
   let measuredGain = null;
   let hearingGain = null;
   let changedLevel = false;
@@ -39,7 +43,11 @@
     $('measure').disabled = busy || !audio.available(role !== 'send');
     $('stop').disabled = !busy;
     document.querySelectorAll('input[name="role"]').forEach(input => { input.disabled = busy; });
-    // Hearing interaction is enabled in the next layer of this page.
+    $('hearing-start').disabled = busy || !audio.available(false);
+    $('hearing-stop').disabled = !hearingActive;
+    $('heard').disabled = !hearingActive || hearingPlaying;
+    $('not-heard').disabled = !hearingActive || hearingPlaying;
+    $('replay').disabled = !hearingActive || hearingPlaying || hearing.replayUsed;
   }
 
   function renderEnvironment() {
@@ -84,9 +92,12 @@
     $('results-body').replaceChildren();
     for (const frequency of frequencies) {
       const row = rows.find(item => item.frequency === frequency);
-      const answer = answers.find(item => item.frequency === frequency);
+      let answer = answers.find(item => item.frequency === frequency);
+      if (answer && hearing.confirmed === false && frequency === hearing.candidate) answer = { ...answer, heard: false };
       const status = row ? row.status : 'unmeasured';
       const reference = changedLevel || Boolean(hearing && hearing.reference) ||
+        Boolean(row && row.reference) ||
+        (measuredRate !== null && hearingRate !== null && measuredRate !== hearingRate) ||
         (measuredGain !== null && hearingGain !== null && measuredGain !== hearingGain);
       const reading = answer ? core.interpretation(status, answer.heard, measuredRole, reference) : null;
       const tr = element('tr');
@@ -97,7 +108,22 @@
         element('td', reading ? t(reading === 'reference' ? 'comparisonReference' : reading) : '—'));
       $('results-body').append(tr);
     }
-    $('result-summary').textContent = frequencies.length ? (changedLevel ? t('changedLevel') : t(statusKey)) : t('empty');
+    $('result-summary').textContent = hearing && hearing.phase === 'done' ? hearingSummary() :
+      frequencies.length ? (changedLevel ? t('changedLevel') : t(statusKey)) : t('empty');
+  }
+
+  function hearingSummary() {
+    if (!hearing) return '';
+    const summary = hearing.confirmed === false ? t('confirmationFailed') :
+      hearing.highest ? `${t('highest')}: ${hz(hearing.highest)}` : t('noneHeard');
+    return summary + (hearing.reference ? ` ${t('comparisonReference')}` : '');
+  }
+
+  function renderHearing() {
+    $('hearing-frequency').textContent = hearingActive ?
+      hz(hearing.phase === 'confirm' ? hearing.candidate : hearing.frequencies[hearing.index]) : '—';
+    $('hearing-status').textContent = !hearing ? '' : hearing.phase === 'done' ? hearingSummary() :
+      !hearingActive ? t('stopped') : hearing.phase === 'confirm' ? t('confirm') : t('answerPrompt');
   }
 
   function render() {
@@ -113,6 +139,7 @@
     renderEnvironment();
     renderBars();
     renderResults();
+    renderHearing();
     controls();
   }
 
@@ -121,6 +148,8 @@
     busy = false;
     current = null;
     statusKey = 'stopped';
+    if (hearingActive) hearing = { ...hearing, phase: 'stopped', reference: true };
+    hearingActive = hearingPlaying = false;
     if (decision) decision(false);
     audio.stop();
     render();
@@ -141,6 +170,8 @@
     const token = ++operation;
     busy = true;
     measuredRole = role;
+    hearing = null;
+    hearingRate = hearingGain = null;
     rows = [];
     measuredGain = level();
     changedLevel = false;
@@ -151,6 +182,7 @@
       render();
       environment = await opened;
       if (token !== operation) return;
+      measuredRate = environment.sampleRate;
       rows = core.DEVICE_FREQUENCIES.map(frequency => ({ frequency,
         status: frequency > environment.upper ? 'unavailable' : 'unmeasured', delta: null,
         reference: core.isReference(frequency, environment.sampleRate) }));
@@ -186,6 +218,68 @@
     }
   }
 
+  async function playHearingStep(token = operation) {
+    if (hearing.phase === 'done') {
+      hearingActive = hearingPlaying = busy = false;
+      audio.stop();
+      render();
+      return;
+    }
+    hearingPlaying = true;
+    render();
+    const frequency = hearing.phase === 'confirm' ? hearing.candidate : hearing.frequencies[hearing.index];
+    try {
+      await audio.burst(frequency, level());
+      if (token !== operation) return;
+      hearingPlaying = false;
+      render();
+    } catch (error) {
+      if (token !== operation || error.message === 'cancelled') return;
+      errorKey = 'notSupported';
+      stop();
+    }
+  }
+
+  async function startHearing() {
+    const token = ++operation;
+    busy = true;
+    hearingPlaying = true;
+    hearingGain = level();
+    errorKey = '';
+    try {
+      const opened = audio.open('hearing');
+      render();
+      environment = await opened;
+      if (token !== operation) return;
+      hearingRate = environment.sampleRate;
+      hearing = core.hearingStart(hearingRate);
+      hearingActive = true;
+      await playHearingStep(token);
+    } catch (error) {
+      if (token !== operation || error.message === 'cancelled') return;
+      errorKey = 'notSupported';
+      stop();
+    }
+  }
+
+  function answerHearing(heard) {
+    if (!hearingActive || hearingPlaying) return;
+    hearing = core.hearingAnswer(hearing, heard);
+    void playHearingStep();
+  }
+
+  $('hearing-start').addEventListener('click', startHearing);
+  $('hearing-stop').addEventListener('click', stop);
+  $('heard').addEventListener('click', () => answerHearing(true));
+  $('not-heard').addEventListener('click', () => answerHearing(false));
+  $('replay').addEventListener('click', () => {
+    if (!hearingActive || hearingPlaying) return;
+    const replay = core.hearingReplay(hearing);
+    if (!replay) return;
+    hearing = replay;
+    void playHearingStep();
+  });
+
   $('theme-toggle').addEventListener('click', () => {
     theme = theme === 'dark' ? 'light' : 'dark'; save('theme', theme); render();
   });
@@ -208,7 +302,8 @@
     render();
   }));
   $('gain').addEventListener('input', () => {
-    if (busy) changedLevel = true;
+    if (hearingActive) hearing = core.hearingVolumeChanged(hearing);
+    else if (busy) changedLevel = true;
     render();
   });
   audio.onInterrupted(() => { if (busy) stop(); });
