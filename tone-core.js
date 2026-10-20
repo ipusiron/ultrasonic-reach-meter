@@ -125,7 +125,7 @@
       // A design floor, not a calibrated acoustic noise floor.
       const delta = deltaDb(Math.max(signal, RECEIVE_POWER_FLOOR), Math.max(background, RECEIVE_POWER_FLOOR));
       maximum = Math.max(maximum, delta);
-      if (delta >= 10) {
+      if (delta > 10) {
         if (firstHigh === null) firstHigh = times[end];
         if (times[end] - firstHigh >= 0.5) repeated = true;
       }

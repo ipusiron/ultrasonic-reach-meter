@@ -155,7 +155,7 @@
       "lesson5Row1Col0": "両方",
       "lesson5Row1Col1": "独立8フレーム平均で+10dB以上を2回、+4dB以上は弱い",
       "lesson5Row2Col0": "拾うだけ",
-      "lesson5Row2Col1": "背景は時間の中央値、信号は8フレーム移動平均、+10dB以上の2時点は0.5秒以上離す",
+      "lesson5Row2Col1": "背景は時間の中央値、信号は8フレーム移動平均、+10dBを超える2時点は0.5秒以上離す",
       "lesson5Source0": "Media Capture and Streams",
       "lesson5Source1": "SoniControl 2018",
       "lesson6Title": "6. 年代と高い音の聞こえ",
@@ -428,8 +428,8 @@
       "lesson5Row1Col0": "Both",
       "lesson5Row1Col1": "Two independent eight-frame comparisons ≥ +10dB; ≥ +4dB is weak",
       "lesson5Row2Col0": "Receive only",
-      "lesson5Row2Col1": "Temporal median background; eight-frame moving average; two ≥ +10dB evaluations at lea" +
-        "st 0.5s apart",
+      "lesson5Row2Col1": "Temporal median background; eight-frame moving average; two > +10dB evaluations at lea" +
+        "st 0.5 seconds apart",
       "lesson5Source0": "Media Capture and Streams",
       "lesson5Source1": "SoniControl 2018",
       "lesson6Title": "6. Age and high-frequency hearing",

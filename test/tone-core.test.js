@@ -212,3 +212,12 @@ test('F2: receiver floor also limits sensitivity when background is very low', (
     assert.equal(result.status, expected);
   }
 });
+
+test('F2: receiver requires strictly more than ten decibels at its boundary', () => {
+  for (const delta of [10 - 1e-6, 10, 10 + 1e-6]) {
+    const powers = Array.from({ length: 100 }, (_, index) =>
+      index >= 20 && index < 40 ? 10 ** (delta / 10) : 1);
+    const result = core.receive(powers, powers.map((_, index) => index * .171));
+    assert.equal(result.status, delta > 10 ? 'reached' : 'weak');
+  }
+});
