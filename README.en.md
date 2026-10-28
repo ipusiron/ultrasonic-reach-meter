@@ -202,6 +202,7 @@ ultrasonic-reach-meter/        # Application root
 ├── package.json              # Test command
 ├── index.html                # Interface and lessons
 ├── style.css                 # Layout and colors
+├── theme-init.js             # Theme before the first paint
 ├── tone-core.js              # Pure tone and classification functions
 ├── audio-io.js               # Audio input, output and timing
 ├── messages.js               # Bilingual copy
@@ -223,6 +224,7 @@ ultrasonic-reach-meter/        # Application root
     ├── format.test.js        # Source readability
     ├── html.test.js          # HTML and CSP
     ├── readme.test.js        # Documentation and screenshots
+    ├── theme-init.test.js    # Initial theme
     └── tone-core.test.js     # Synthetic spectra and pure functions
 ```
 

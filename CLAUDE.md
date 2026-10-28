@@ -8,6 +8,7 @@ Day119の静的な学習ツールです。端末の出力から入力までの�
 - audio-io.js：UMDの音声入出力。ブラウザーの機能、許可、音声の中断、停止処理
 - messages.js：日英の文章。app.jsはtextContentとcreateElementで描画
 - index.html・style.css：タブのない1ページ、44px以上の操作対象、dialogによるヘルプ
+- theme-init.js：最初の描画の前に`<html>`の`data-theme`を決める。`<head>`でstyle.cssの直後にdeferなしで読む。保存値が`light`ならライト、それ以外と保存なしはOSの設定にかかわらずダーク（青焼き）。app.jsは起動時に`data-theme`を読み、トグルで切り替えて保存する
 - test/：node:test。外部の依存パッケージは不要
 
 Node.jsは22以上です。`npm test`で全件を実行します。Git Bashの構文検査は次の形です。
