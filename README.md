@@ -221,6 +221,7 @@ ultrasonic-reach-meter/        # ツール本体
 ├── package.json              # テスト用コマンド
 ├── index.html                # 画面と座学
 ├── style.css                 # 配置と配色
+├── theme-init.js             # 描画前の明暗の決定
 ├── tone-core.js              # 音と判定の純関数
 ├── audio-io.js               # 音声入出力と時計管理
 ├── messages.js               # 日英の文章
@@ -242,6 +243,7 @@ ultrasonic-reach-meter/        # ツール本体
     ├── format.test.js        # ソースの可読性
     ├── html.test.js          # HTMLとCSP
     ├── readme.test.js        # 文書と画面例
+    ├── theme-init.test.js    # 最初の明暗
     └── tone-core.test.js     # 合成スペクトルと純関数
 ```
 

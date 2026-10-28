@@ -10,7 +10,8 @@
   function save(key, value) { try { localStorage.setItem(prefix + key, value); } catch (_) { /* Optional preference. */ } }
   let language = stored('lang') || (navigator.language.startsWith('ja') ? 'ja' : 'en');
   if (!messages[language]) language = 'ja';
-  let theme = stored('theme') === 'light' ? 'light' : 'dark';
+  /* theme-init.js has already set data-theme in <head> from the saved choice, so start-up reads it back. */
+  let theme = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
   let busy = false;
   let role = 'both';
   let measuredRole = 'both';
