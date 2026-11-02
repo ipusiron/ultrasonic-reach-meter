@@ -242,6 +242,7 @@ ultrasonic-reach-meter/        # ツール本体
     ├── contrast.test.js      # 文字のコントラスト
     ├── format.test.js        # ソースの可読性
     ├── html.test.js          # HTMLとCSP
+    ├── live-region.test.js   # 読み上げ領域の書き込み
     ├── readme.test.js        # 文書と画面例
     ├── theme-init.test.js    # 最初の明暗
     └── tone-core.test.js     # 合成スペクトルと純関数

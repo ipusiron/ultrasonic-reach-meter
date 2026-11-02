@@ -223,6 +223,7 @@ ultrasonic-reach-meter/        # Application root
     ├── contrast.test.js      # Text contrast
     ├── format.test.js        # Source readability
     ├── html.test.js          # HTML and CSP
+    ├── live-region.test.js   # Live-region writes
     ├── readme.test.js        # Documentation and screenshots
     ├── theme-init.test.js    # Initial theme
     └── tone-core.test.js     # Synthetic spectra and pure functions
