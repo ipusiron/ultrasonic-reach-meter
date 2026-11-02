@@ -43,8 +43,8 @@
       <p data-i18n="safety1"></p>
       <p data-i18n="safety2"></p>
       <p data-i18n="safety3"></p>
-      <label for="gain"><span data-i18n="gain"></span> <output id="gain-value">−30dBFS</output></label>
-      <input id="gain" type="range" min="-60" max="-12" value="-30" step="1">
+      <label for="gain"><span data-i18n="gain"></span> <span id="gain-value" aria-hidden="true">−30dBFS</span></label>
+      <input id="gain" type="range" min="-60" max="-12" value="-30" step="1" aria-valuetext="−30dBFS">
       <p class="muted" data-i18n="gainHelp"></p>
     </section>
     <section class="card" aria-labelledby="environment-title">
@@ -98,7 +98,8 @@
         <button id="measure" type="button" class="primary" data-i18n="measure" disabled></button>
         <button id="stop" type="button" data-i18n="stop" disabled></button>
       </div>
-      <p id="status" class="readout" role="status" aria-live="polite" data-i18n="idle"></p>
+      <p id="status" class="readout"></p>
+      <p id="status-live" class="sr-only" role="status"></p>
       <p id="current-frequency" class="current-frequency">—</p>
       <p id="error" class="warning" role="alert"></p>
       <div id="reach-bars"></div>

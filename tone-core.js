@@ -217,9 +217,16 @@
     return 'deviceUnknown';
   }
 
+  // Live regions re-announce on every text-node replacement, even with the same text.
+  function writeText(node, text) {
+    if (node.textContent === text) return false;
+    node.textContent = text;
+    return true;
+  }
+
   return Object.freeze({ FFT_SIZE, FRAME_COUNT, DEFAULT_DB, MAX_DB, RECEIVE_POWER_FLOOR, DEVICE_FREQUENCIES, HEARING_FREQUENCIES,
     upperFrequency, isReference, ladder, gain, toneSamples, rampPoints, frameInterval, timing,
     validFrame, frequencyBin, bandPower, meanPower, deltaDb, classify, trialExplanation, receive, processing,
     environmentSnapshot, referenceReasons,
-    hearingStart, hearingAnswer, hearingReplay, hearingVolumeChanged, interpretation });
+    hearingStart, hearingAnswer, hearingReplay, hearingVolumeChanged, interpretation, writeText });
 }));

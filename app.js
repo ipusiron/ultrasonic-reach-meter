@@ -28,6 +28,9 @@
   let errorKey = '';
   let operation = 0;
   let decision = null;
+  /* Visual-only phases: the readout alternates quiet/tone during a run, so only start/end states are spoken. */
+  const silentKeys = new Set(['idle', 'quiet', 'tone']);
+  let spokenKey = '';
   const t = key => messages[language][key] || key;
   const hz = frequency => `${(frequency / 1000).toLocaleString(language, { maximumFractionDigits: 1 })}kHz`;
   const level = () => Number($('gain').value);
@@ -146,28 +149,50 @@
     return summary + (reference.length ? ` ${referenceText(reference)}` : '');
   }
 
-  function renderHearing() {
-    const frequency = hearingActive ? hearing.phase === 'confirm' ? hearing.candidate : hearing.frequencies[hearing.index] : null;
-    $('hearing-frequency').textContent = frequency ? hz(frequency) : '—';
-    $('hearing-reference').textContent = frequency ? referenceText(reasons(frequency)) : '';
-    $('hearing-status').textContent = !hearing ? '' : hearing.phase === 'done' ? hearingSummary() :
-      !hearingActive ? t('stopped') : hearing.phase === 'confirm' ? t('confirm') : t('answerPrompt');
+  function hearingFrequency() {
+    return hearingActive ? hearing.phase === 'confirm' ? hearing.candidate : hearing.frequencies[hearing.index] : null;
   }
 
-  function render() {
+  function renderHearing() {
+    const frequency = hearingFrequency();
+    core.writeText($('hearing-frequency'), frequency ? hz(frequency) : '—');
+  }
+
+  function renderGain() {
+    const text = `${level()}dBFS`;
+    core.writeText($('gain-value'), text);
+    if ($('gain').getAttribute('aria-valuetext') !== text) $('gain').setAttribute('aria-valuetext', text);
+  }
+
+  /* Every live region goes through writeText so unchanged text is never re-announced. */
+  function announce() {
+    const errorText = errorKey ? t(errorKey) : '';
+    core.writeText($('error'), errorText);
+    const frequency = hearingFrequency();
+    core.writeText($('hearing-reference'), frequency ? referenceText(reasons(frequency)) : '');
+    const hearingText = !hearing ? '' : hearing.phase === 'done' ? hearingSummary() :
+      !hearingActive ? t('stopped') : hearing.phase === 'confirm' ? t('confirm') : t('answerPrompt');
+    core.writeText($('hearing-status'), hearingText);
+    if (!silentKeys.has(statusKey)) spokenKey = statusKey;
+    const spoken = spokenKey ? t(spokenKey) : '';
+    /* One sentence is spoken once: skip it when the alert or the hearing status already carries it. */
+    if (spoken !== errorText && spoken !== hearingText) core.writeText($('status-live'), spoken);
+  }
+
+  function render(speak = true) {
     document.documentElement.lang = language;
     document.documentElement.dataset.theme = theme;
     document.body.dataset.busy = busy ? 'true' : 'false';
-    document.querySelectorAll('[data-i18n]').forEach(node => { node.textContent = t(node.dataset.i18n); });
+    document.querySelectorAll('[data-i18n]').forEach(node => { core.writeText(node, t(node.dataset.i18n)); });
     document.querySelectorAll('[data-label]').forEach(node => { node.setAttribute('aria-label', t(node.dataset.label)); });
-    $('gain-value').textContent = `${level()}dBFS`;
-    $('status').textContent = t(statusKey);
-    $('error').textContent = errorKey ? t(errorKey) : '';
-    $('current-frequency').textContent = current ? hz(current) : '—';
+    renderGain();
+    core.writeText($('status'), t(statusKey));
+    core.writeText($('current-frequency'), current ? hz(current) : '—');
     renderEnvironment();
     renderBars();
     renderResults();
     renderHearing();
+    if (speak) announce();
     controls();
   }
 
@@ -237,7 +262,7 @@
         await audio.staircase(role, level, step => {
           if (step.phase === 'row') rows[rows.findIndex(row => row.frequency === step.row.frequency)] = step.row;
           else { current = step.frequency; statusKey = step.phase; }
-          render();
+          render(false);
         });
       }
       if (token === operation) statusKey = 'complete';
@@ -352,8 +377,10 @@
       hearingLevelChanged = true;
     }
     else if (busy) changedLevel = true;
-    render();
+    render(false);
   });
+  /* Spoken updates (e.g. a new reference reason) wait until the slider value is committed. */
+  $('gain').addEventListener('change', () => render());
   audio.onInterrupted(reason => {
     if (!busy) return;
     if (reason === 'inputInterrupted') markInterrupted(reason);
